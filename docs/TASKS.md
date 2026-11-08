@@ -18,8 +18,8 @@
 ## Hour 0–1 — Foundations and provider feasibility
 
 - [x] Read `AGENTS.md` and current official SpacetimeDB/Photon docs.
-- [ ] Bootstrap SpacetimeDB React starter; app loads.
-- [ ] Prove one reducer mutation updates two browser clients.
+- [x] Bootstrap SpacetimeDB React starter; app loads.
+- [x] Prove one reducer mutation updates two browser clients. _(`npm run test:smoke`: two independent subscribers)_
 - [ ] Create Photon 2.0 project and inspect available number types and billing.
 - [ ] Attempt **inbound voice** setup immediately; confirm an eligible number is obtainable.
 - [ ] Identify a genuine iMessage-capable sender if iMessage is part of the live demo.
@@ -41,9 +41,9 @@
 
 - [x] Add deterministic scam checks for requests for OTP, card/payment details, urgency, brand impersonation, and suspicious link patterns.
 - [x] Return structured evidence and confidence labels; optionally enrich wording with an LLM. _(no LLM)_
-- [ ] Implement controlled first-party mock collector and a small synthetic persona library.
+- [x] Implement controlled first-party mock collector and a small synthetic persona library. _(one fictional persona; Collector tab)_
 - [x] Add operator-triggered bounded decoy run (never third-party traffic, never unbounded loops).
-- [ ] Chart actual simulated collector data; show decoy ratio and counts honestly.
+- [x] Chart actual simulated collector data; show decoy ratio and counts honestly.
 
 **Gate:** One click starts a decoy session; events increment in SpacetimeDB and both dashboards visibly update.
 
@@ -54,17 +54,17 @@
 - [ ] Complete Photon -> ElevenLabs inbound SIP call; verify two-way audio with a phone.
 - [ ] Connect post-call event or verified provider status -> gateway -> incident (or document blocker). _Code + signed synthetic end-to-end test pass (`npm run test:webhook`). Pending: real call + public HTTPS tunnel._
 - [x] Show provider status in UI: live, unavailable, or simulated.
-- [ ] Integrate all three UI views with production reducers and scenario controller.
+- [x] Integrate all three UI views with production reducers and scenario controller.
 
 **Gate:** Show at least one complete real provider event if available, without causing the demo to fail if unavailable.
 
 ## Hour 8–10 — Freeze features and polish
 
-- [ ] Improve command-center visual hierarchy, animation of new events, typography, and status contrast.
+- [x] Improve command-center visual hierarchy, animation of new events, typography, and status contrast. _(redesign + arrival halo)_
 - [x] Provide a single `Reset demo` button that only affects team-owned synthetic data.
 - [x] Add loading/error states and dedupe/reconnect handling.
 - [ ] Run one full scripted demonstration on the presentation machine.
-- [x] Make every `SIMULATED` and `LIVE` indicator reflect actual provenance. _Labels derive from stored `sourceKind`; status upgrades only after a verified event. Not yet eyeballed in a browser._
+- [x] Make every `SIMULATED` and `LIVE` indicator reflect actual provenance. _Labels derive from stored `sourceKind`; status upgrades only after a verified event. Checked in headless-Chrome screenshots._
 
 **Gate:** No additional architectural rewrites. Full demonstration takes under three minutes.
 
@@ -76,7 +76,7 @@
 - [ ] Capture real fallback evidence (screen recording of verified integrations) if permitted.
 - [ ] Test no-network fallback and explain what is simulated.
 - [ ] Rehearse `docs/DEMO.md` and assign team speaking roles. _(script rewritten for the new UI)_
-- [ ] Update README `Status` truthfully.
+- [x] Update README `Status` truthfully.
 
 ## Scope cuts in priority order
 

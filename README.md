@@ -6,15 +6,18 @@ Collective scam defense: check any text or email, link reports into campaigns, a
 
 ## What works
 
-- **Check a message.** Paste a text or full email. An explainable rules analyzer flags brand impersonation, lookalike, shortened or IP links, sender and reply-to mismatches, gift-card, crypto, code and password requests, threats, urgency, and authority pretexts. Every flag is shown in plain language with low, medium or high confidence.
+- **Check a message.** Paste a text or full email, or drop a raw `.eml` (headers, MIME and HTML decoded; failed SPF/DKIM/DMARC flagged). An explainable rules analyzer flags brand impersonation, lookalike, shortened or IP links, sender and reply-to mismatches, gift-card, crypto, code and password requests, threats, urgency, and authority pretexts. Every flag is shown in plain language with low, medium or high confidence.
 - **Campaigns.** Reports are grouped by tactic and impersonated brand. Link domains and brands shared by two or more reports connect campaigns in an interactive Cytoscape graph (drag, select, zoom).
 - **Honeypot calls.** Photon number → ElevenLabs agent. The gateway polls ElevenLabs (read-only, no tunnel). A live call appears on the graph, and its summary is filed as a report when it ends. A signed post-call webhook is also supported. The stats show **Caller time wasted**.
 - **iMessage.** Optional polling of a Photon line. A forwarded message is filed and, if enabled for allowlisted contacts, answered with the verdict.
-- **Customer view.** One plain-language card: verdict, reasons, one next step.
+- **Customer view.** Anyone can paste a message and get a plain-language verdict computed in the browser (nothing is sent), with a note when it matches a known campaign and an opt-in "Report to protect others". A browser extension adds a right-click "Check with scamnasium".
 - **Mock collector.** A bounded first-party simulation of decoys diluting a scammer's list. No external traffic.
 - **Privacy.** Public tables hold sanitized summaries only: no transcripts, phone numbers, email usernames or provider IDs. Provenance is shown on every report.
 
-Not yet verified against the real APIs: ElevenLabs polling (needs the API key) and Photon polling and replies.
+## Status (2026-11-08)
+- **Verified locally:** database, gateway, analyzer, all four views, raw email decoding, extension handoff, signed ElevenLabs webhook (synthetic payloads), and gateway auto-reconnect. `npm test`, `test:smoke`, `test:gateway` and `test:webhook` pass.
+- **Written, not verified against real services:** ElevenLabs call polling (needs the API key), Photon iMessage polling and replies, and the voice-agent update script (preview by default, never applied).
+- **Not done:** a real end-to-end call through the new app path, and a rehearsal on the presentation machine.
 
 ## Run on your machine
 
