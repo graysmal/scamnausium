@@ -11,7 +11,11 @@ A working local prototype for collective scam defense: synthetic reports, explai
 - Bounded collector: 3 synthetic baseline records + 9 tagged synthetic decoys per run; no external target URLs or traffic.
 - Private publishing-identity authorization, local gateway operator secret, request limits and reducer idempotency.
 
-**Not integrated yet:** Photon live ingestion/replies, ElevenLabs SIP and verified webhooks. The typed Photon adapter compiles against the installed official SDK but is not wired to a polling worker. No provider requests or messages have been sent. Configured credentials show “Awaiting verification,” never “Live.”
+**Provider ingestion (code complete, real round trip NOT yet verified):**
+
+- **ElevenLabs post-call webhook** → `POST /webhooks/elevenlabs`. HMAC-verified (`ElevenLabs-Signature`), agent-filtered, replay-deduped, resumable. Stores only a sanitized `transcript_summary` (emails/phone numbers/long digit runs redacted); never the transcript or the conversation ID. Verified end to end with signed synthetic payloads (`npm run test:webhook`). A real call additionally needs a Photon voice number → ElevenLabs SIP, and a public HTTPS tunnel to the gateway.
+- **Photon iMessage** → opt-in polling worker (`ENABLE_PHOTON_POLLING=true`), only for `PHOTON_TEST_SENDER` → `PHOTON_AGENT_HANDLE` direct text. Reports become incidents; `ping` gets a connection-test reply. Replies require `ENABLE_LIVE_MESSAGING=true` and the sender in `ALLOWED_TEST_CONTACTS`. Unit-tested with a fake adapter; no request has been made to Photon.
+- Every incident shows its provenance (`SIMULATED`, `SIMULATED VOICE`, `PROVIDER CALL`, `PROVIDER iMESSAGE`). Provider status only changes after a verified event, never because a key is configured.
 
 ## Run on your machine
 
@@ -61,15 +65,19 @@ See [docs/SETUP.md](docs/SETUP.md) for the account steps to complete now. Do not
 
 ```bash
 npm run check
-npm test
+npm test                 # unit: domain + provider ingestion (14 tests)
 npm run build
 # With local SpacetimeDB running and .env populated:
 npm run test:smoke
 # With gateway also running:
-node --import tsx tests/gateway-smoke.ts
+npm run test:gateway
+# With gateway running and test values for ELEVENLABS_WEBHOOK_SECRET / ELEVENLABS_AGENT_ID:
+npm run test:webhook
 ```
 
-**The smoke test resets the named local synthetic demo database.** Do not point it at a shared judging session. Gateway test injects a synthetic bank event.
+Tip: to test without touching your real `.env`, point dotenv at another file: `DOTENV_CONFIG_PATH=/path/to/test.env npm run gateway`.
+
+**The smoke and webhook tests reset the named local synthetic demo database.** Do not point it at a shared judging session. Gateway test injects a synthetic bank event.
 
 Verified in the build environment:
 

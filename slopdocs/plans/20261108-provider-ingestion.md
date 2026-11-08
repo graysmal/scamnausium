@@ -23,13 +23,13 @@ Real provider events become incidents in SpacetimeDB with honest provenance, wit
 7. UI provenance from `sourceKind`: manual_demo=SIMULATED, voice_simulation=SIMULATED VOICE, elevenlabs_call=PROVIDER CALL, photon_imessage=PROVIDER iMESSAGE. Status strings: Not configured / Awaiting verification / Verified event received <time>. Never "Live" from config alone.
 
 ## Tasks
-- [ ] domain: sanitizeSummary, unclassified analysis, analyzed->protected (+unit tests)
-- [ ] module: reportExternalIncident; regenerate bindings; republish
-- [ ] gateway: elevenlabs verify/parse module (+unit tests incl. tampered/stale/wrong agent)
-- [ ] gateway: serialized ingest helper (dedupe -> report -> analyze -> link?)
-- [ ] gateway: mount webhook w/ raw body; status reflects verified events
-- [ ] gateway: photon poller + gated ack reply (+unit test w/ fake adapter)
-- [ ] frontend: provenance badges, customer button on analyzed
-- [ ] smoke: signed webhook fixture -> incident, replay deduped, bad sig 401
-- [ ] docs: .env.example, README, TASKS, INTEGRATIONS, slopdocs feature doc
-- [ ] browser check of full demo if a browser tool is available
+- [x] domain: sanitizeSummary, unclassified analysis, analyzed->protected (+unit tests)
+- [x] module: reportExternalIncident; regenerate bindings; republish
+- [x] gateway: elevenlabs verify/parse module (+unit tests incl. tampered/stale/wrong agent)
+- [x] gateway: serialized ingest helper (dedupe -> report -> analyze -> link?)
+- [x] gateway: mount webhook w/ raw body; status reflects verified events
+- [x] gateway: photon poller + gated ack reply (+unit test w/ fake adapter)
+- [x] frontend: provenance badges, customer button on analyzed
+- [x] smoke: signed webhook fixture -> incident, replay deduped, bad sig 401
+- [x] docs: .env.example, README, TASKS, INTEGRATIONS, slopdocs feature doc
+- [ ] browser check of full demo — NOT DONE: no browser automation tool in session

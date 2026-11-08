@@ -49,10 +49,10 @@
 
 ## Hour 5–8 — Communications + end-to-end flow
 
-- [ ] Connect Photon inbound iMessage (if line and eligible sender available).
-- [ ] Reply once to an allowlisted team-owned test conversation, with idempotency and status tracking.
+- [ ] Connect Photon inbound iMessage (if line and eligible sender available). _Code: opt-in polling worker + unit tests (overnight/integrations). Pending: real sender/line + first live poll._
+- [ ] Reply once to an allowlisted team-owned test conversation, with idempotency and status tracking. _Code: `replyAck`/`replyToPing` with idempotency keys, gated by ENABLE_LIVE_MESSAGING + allowlist. Not sent yet._
 - [ ] Complete Photon -> ElevenLabs inbound SIP call; verify two-way audio with a phone.
-- [ ] Connect post-call event or verified provider status -> gateway -> incident (or document blocker).
+- [ ] Connect post-call event or verified provider status -> gateway -> incident (or document blocker). _Code + signed synthetic end-to-end test pass (`npm run test:webhook`). Pending: real call + public HTTPS tunnel._
 - [x] Show provider status in UI: live, unavailable, or simulated.
 - [ ] Integrate all three UI views with production reducers and scenario controller.
 
@@ -64,15 +64,15 @@
 - [ ] Provide a single `Reset demo` button that only affects team-owned synthetic data.
 - [ ] Add loading/error states and dedupe/reconnect handling.
 - [ ] Run one full scripted demonstration on the presentation machine.
-- [ ] Make every `SIMULATED` and `LIVE` indicator reflect actual provenance.
+- [x] Make every `SIMULATED` and `LIVE` indicator reflect actual provenance. _Labels derive from stored `sourceKind`; status upgrades only after a verified event. Not yet eyeballed in a browser._
 
 **Gate:** No additional architectural rewrites. Full demonstration takes under three minutes.
 
 ## Hour 10–12 — Verify, pitch, rehearse
 
 - [x] Typecheck/build/test; record commands and results in README.
-- [ ] Test reducer state transitions, campaign matching, duplicate provider events, and unauthorized operator actions.
-- [ ] Verify no credentials/real contacts in frontend bundles or public tables.
+- [x] Test reducer state transitions, campaign matching, duplicate provider events, and unauthorized operator actions.
+- [x] Verify no credentials/real contacts in frontend bundles or public tables. _Bundle scanned against .env values (2026-11-08); webhook test asserts transcript/phone/provider ID absent from incidents._
 - [ ] Capture real fallback evidence (screen recording of verified integrations) if permitted.
 - [ ] Test no-network fallback and explain what is simulated.
 - [ ] Rehearse `docs/DEMO.md` and assign team speaking roles.

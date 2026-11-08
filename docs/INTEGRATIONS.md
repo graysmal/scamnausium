@@ -89,3 +89,17 @@ Never place secrets in `VITE_*` variables; Vite exposes them to the browser. Use
 - At hour 3, if iMessage isn't available (no iPhone/Mac sender or line), prioritize voice and synthetic inbox. Do not mislabel SMS as iMessage.
 - At hour 8, freeze provider changes except small fixes to already working integrations.
 - Keep a genuine screen recording of any verified live call/message as an on-stage fallback, labeled `RECORDED LIVE TEST` (distinct from `SIMULATED`).
+
+## 7. Implemented ingestion (branch `overnight/integrations`, 2026-11-08)
+
+**ElevenLabs → incident.** `POST /webhooks/elevenlabs` on the gateway.
+1. ElevenLabs agent → Post-call webhook → type *transcription*, URL `https://<your-tunnel>/webhooks/elevenlabs`. Copy the HMAC secret into `ELEVENLABS_WEBHOOK_SECRET`; set `ELEVENLABS_AGENT_ID`.
+2. The gateway listens on `127.0.0.1` only. Expose it with a tunnel you control (e.g. `cloudflared tunnel --url http://127.0.0.1:4000`) only for the duration of the test.
+3. Signature: `ElevenLabs-Signature: t=<unix>,v0=<hex HMAC-SHA256(secret, "t.rawBody")>`, max age 30 min. Taken from the official JS SDK source because the docs don't spell it out.
+4. Only `data.analysis.transcript_summary` is used, sanitized; the transcript is never read. Incident id = `el-` + sha256(conversation_id). Replays → `duplicate`. DB down → 503 so ElevenLabs can retry (enable retries on the webhook).
+5. Status in the UI changes to "Verified call event" only after a signature-verified event is ingested.
+
+**Photon iMessage → incident.** Polling, not webhooks: Photon webhooks need a public HTTPS URL and their payload schema is only in an authenticated catalog; the typed `listMessages` API is documented and already in the SDK.
+1. Fill `PHOTON_AGENT_HANDLE` (assigned shared line) and `PHOTON_TEST_SENDER` (your iMessage phone/email exactly as in Settings → Messages → Send & Receive).
+2. `ENABLE_PHOTON_POLLING=true` → read-only polling every ≥5 s from gateway start time (no history import), max 20 messages per poll, configured sender only.
+3. Replies (`ping` connection test, report acknowledgement) additionally require `ENABLE_LIVE_MESSAGING=true` and the sender in `ALLOWED_TEST_CONTACTS`. Idempotency keys: `scamnasium-ping:<id>`, `scamnasium-ack:<id>`.
