@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type DragEvent, type FormEvent } from 'react';
+import { isRawEmail } from '../../spacetimedb/src/email';
 import type { Calls } from '../module_bindings/types';
 import { duration, toMs } from '../lib/format';
 import type { Action, GatewayStatus } from '../lib/api';
@@ -49,6 +50,22 @@ export function OperatorRail({secret, onSecret, busy, calls, status, onReport, o
   const anyLive = ordered.some(c => c.status === 'in_progress' || c.status === 'ringing');
   const now = useNow(anyLive);
 
+  const [dragging, setDragging] = useState(false);
+  const raw = isRawEmail(text);
+
+  async function loadFile(file: File | undefined) {
+    if (!file) return;
+    if (file.size > 500_000) { window.alert('That file is too large. Export a single email (.eml) under 500 KB.'); return; }
+    setText(await file.text());
+    if (/\.eml$/i.test(file.name)) setChannel('email');
+  }
+
+  function drop(e: DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    void loadFile(e.dataTransfer.files[0]);
+  }
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (await onReport(text, channel)) setText('');
@@ -67,8 +84,13 @@ export function OperatorRail({secret, onSecret, busy, calls, status, onReport, o
           <h2>Check a message</h2>
           <button type="button" className="link" onClick={() => setText(SAMPLE)}>Use sample</button>
         </div>
-        <textarea value={text} onChange={e => setText(e.target.value)} rows={7} maxLength={4000}
-          placeholder="Paste a suspicious text or a full email, headers included." aria-label="Message to check" />
+        <textarea value={text} onChange={e => setText(e.target.value)} rows={7} maxLength={500_000}
+          className={dragging ? 'dropping' : undefined}
+          onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}
+          placeholder="Paste a suspicious text or email. You can also drop an .eml file or paste “Show original”." aria-label="Message to check" />
+        <p className="hint">
+          {raw ? 'Raw email detected: headers, sender checks and HTML will be decoded.' : <>Or <label className="link file-pick">choose an .eml file<input type="file" accept=".eml,message/rfc822,text/plain" onChange={e => { void loadFile(e.target.files?.[0]); e.target.value = ''; }} /></label></>}
+        </p>
         <div className="row">
           <select value={channel} onChange={e => setChannel(e.target.value as Channel)} aria-label="Channel">
             <option value="auto">Detect type</option>

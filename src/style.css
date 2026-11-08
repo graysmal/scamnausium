@@ -53,6 +53,11 @@ input, select, textarea {
 }
 textarea { resize: vertical; min-height: 120px; line-height: 1.45; }
 input::placeholder, textarea::placeholder { color: var(--ink-3); }
+textarea.dropping { border-style: dashed; border-color: var(--ink); background: var(--paper); }
+.hint { margin: 6px 0 0; font-size: 12px; color: var(--ink-3); }
+.file-pick { position: relative; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); cursor: pointer; }
+.file-pick:hover { color: var(--ink); }
+.file-pick input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 select { width: auto; }
 
 .mono { font-family: var(--mono); font-size: .92em; }
@@ -232,3 +237,4 @@ button.tag:hover { border-color: var(--ink); color: var(--ink); }
   .graph { min-height: 380px; }
   .rail, .inspector, .collector, .setup { padding: 16px; }
 }
+.tone-high { color: var(--high); font-weight: 600; }

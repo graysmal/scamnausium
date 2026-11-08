@@ -4,6 +4,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { DbConnection } from '../../../src/module_bindings/index';
 import { MAX_REPORT_LENGTH, parseMessage, sanitizeSummary } from '../../../spacetimedb/src/domain';
+import { compactEmail } from '../../../spacetimedb/src/email';
 import { createIngestor, type ExternalReport } from './ingest';
 import { parsePostCall, verifyElevenLabsSignature } from './webhooks/elevenlabs';
 import { createPhotonAdapter } from './adapters/photon';
@@ -124,7 +125,10 @@ app.post('/webhooks/elevenlabs', limit(30, 60_000), express.text({type: '*/*', l
   }
 });
 
-app.use(express.json({limit: '16kb'}));
+// Raw emails (.eml, "Show original") carry long headers and HTML parts; only the report route accepts them.
+const smallJson = express.json({limit: '16kb'});
+const reportJson = express.json({limit: '512kb'});
+app.use((req, res, next) => (req.path === '/api/report' ? reportJson : smallJson)(req, res, next));
 
 app.get('/api/status', (_req, res) => {
   res.json({database: connected ? 'Connected' : 'Disconnected', honeypotNumber, voice: voiceStatus(), messaging: messagingStatus()});
@@ -143,8 +147,9 @@ app.use('/api', (req, res, next) => {
 app.post('/api/report', limit(20, 60_000), async (req, res) => {
   const {text, channel} = (req.body ?? {}) as {text?: unknown; channel?: unknown};
   if (typeof text !== 'string' || !text.trim()) { res.status(400).json({error: 'Paste the message text first.'}); return; }
-  if (text.length > MAX_REPORT_LENGTH) { res.status(400).json({error: `Keep it under ${MAX_REPORT_LENGTH} characters.`}); return; }
-  const clean = sanitizeSummary(text, MAX_REPORT_LENGTH);
+  const compact = compactEmail(text);
+  if (compact.length > MAX_REPORT_LENGTH && compact === text) { res.status(400).json({error: `Keep it under ${MAX_REPORT_LENGTH} characters.`}); return; }
+  const clean = sanitizeSummary(compact, MAX_REPORT_LENGTH);
   const resolved = channel === 'sms' || channel === 'email' || channel === 'imessage' ? channel : parseMessage(clean).looksLikeEmail ? 'email' : 'sms';
   const eventId = `rp-${createHash('sha256').update(clean.toLowerCase().replace(/\s+/g, ' ')).digest('hex').slice(0, 32)}`;
   try {

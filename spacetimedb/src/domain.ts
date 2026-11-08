@@ -50,6 +50,8 @@ export interface ParsedMessage {
   senderDomain: string;
   replyToDomain: string;
   looksLikeEmail: boolean;
+  /** Failed checks from an "Auth: spf=… dkim=… dmarc=…" line (written by email.compactEmail). */
+  authFailures: string[];
 }
 
 /** Shortens at a word boundary and marks the cut. */
@@ -60,7 +62,7 @@ export function clip(text: string, max: number): string {
   return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), max * 0.6)).trimEnd()}…`;
 }
 
-const HEADER = /^(from|to|subject|reply-to|date|sent|cc):\s*(.*)$/i;
+const HEADER = /^(from|to|subject|reply-to|date|sent|cc|auth):\s*(.*)$/i;
 const domainOf = (s: string) => s.match(/@([a-z0-9.-]+\.[a-z]{2,})/i)?.[1]?.toLowerCase() ?? '';
 
 export function parseMessage(raw: string): ParsedMessage {
@@ -76,7 +78,9 @@ export function parseMessage(raw: string): ParsedMessage {
   const body = (looksLikeEmail ? lines.slice(i) : lines).join('\n').trim();
   const firstSentence = body.split(/(?<=[.!?])\s|\n/)[0]?.trim() ?? '';
   const headline = clip(headers.subject || firstSentence || body, 96);
-  return {headline, body, senderDomain: domainOf(headers.from ?? ''), replyToDomain: domainOf(headers['reply-to'] ?? ''), looksLikeEmail};
+  const authFailures = [...(headers.auth ?? '').matchAll(/\b(spf|dkim|dmarc)=(fail|softfail|permerror)\b/gi)]
+    .map(([, check, result]) => `${check.toUpperCase()} ${result.toLowerCase()}`);
+  return {headline, body, senderDomain: domainOf(headers.from ?? ''), replyToDomain: domainOf(headers['reply-to'] ?? ''), looksLikeEmail, authFailures};
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +132,7 @@ export function extractHosts(text: string): string[] {
 export type SignalId =
   | 'urgency' | 'threat' | 'payment' | 'untraceable_payment' | 'credentials' | 'one_time_code'
   | 'prize' | 'remote_access' | 'callback' | 'brand_link_mismatch' | 'brand_sender_mismatch'
-  | 'reply_to_mismatch' | 'brand_sensitive_request' | 'compromise_scare' | 'authority_pretext' | 'job_offer' | 'family_emergency' | 'too_good' | 'wrong_number' | 'shortened_link' | 'ip_link' | 'punycode_link' | 'risky_tld' | 'insecure_link' | 'lookalike_domain';
+  | 'reply_to_mismatch' | 'brand_sensitive_request' | 'compromise_scare' | 'authority_pretext' | 'job_offer' | 'family_emergency' | 'too_good' | 'wrong_number' | 'shortened_link' | 'ip_link' | 'punycode_link' | 'risky_tld' | 'insecure_link' | 'lookalike_domain' | 'auth_failed';
 
 export interface Signal { id: SignalId; label: string; weight: number }
 
@@ -232,6 +236,7 @@ export function analyze(raw: string): Analysis {
   if (brand && signals.some(s => s.id === 'one_time_code' || s.id === 'credentials' || s.id === 'untraceable_payment')) add('brand_sensitive_request', 2, `Claims to be ${brand.name} and asks for sensitive information`);
   if (/\bhttp:\/\//i.test(text)) add('insecure_link', 1, 'Link is not encrypted (http)');
   if (brand && msg.senderDomain && !isOfficial(msg.senderDomain, brand)) add('brand_sender_mismatch', 3, `Claims to be ${brand.name}, but was sent from ${msg.senderDomain}`);
+  if (msg.authFailures.length) add('auth_failed', 3, `Email failed sender checks (${msg.authFailures.join(', ')}): it may not come from who it says`);
   if (msg.replyToDomain && msg.senderDomain && msg.replyToDomain !== msg.senderDomain) add('reply_to_mismatch', 2, `Replies go to a different domain (${msg.replyToDomain})`);
 
   const score = signals.reduce((sum, s) => sum + s.weight, 0);

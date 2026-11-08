@@ -1,0 +1,24 @@
+Delivered-To: demo@example.org
+Received: from mail.paypa1-billing.example.com (mail.paypa1-billing.example.com [192.0.2.10])
+        by mx.example.org with ESMTP id abc123
+        for <demo@example.org>; Sat, 07 Nov 2026 22:14:03 -0800 (PST)
+Authentication-Results: mx.example.org;
+       spf=softfail (domain does not designate 192.0.2.10) smtp.mailfrom=paypa1-billing.example.com;
+       dkim=none;
+       dmarc=fail (p=REJECT) header.from=paypal.com
+Return-Path: <bounce@paypa1-billing.example.com>
+From: =?UTF-8?B?UGF5UGFsIFNlcnZpY2U=?= <service@paypa1-billing.example.com>
+Reply-To: help@secure-resolve.example.net
+Subject: =?UTF-8?Q?Your_account_has_been_limited_=E2=80=93_action_required?=
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="b1"
+
+--b1
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<html><head><style>p{color:red}</style></head><body><p>Dear customer,</p><p>We=
+ noticed unusual activity. Log in within 24 hours to restore access or your=
+ account will be suspended.</p><p><a href=3D"http://bit.ly/restore-access">Res=
+tore account</a></p></body></html>
+--b1--

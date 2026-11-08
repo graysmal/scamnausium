@@ -15,7 +15,7 @@
     "setup:local": "node scripts/setup-local.mjs",
     "seed": "node --import tsx scripts/seed-demo.ts",
     "agent:prompt": "node --import tsx scripts/apply-agent-prompt.ts",
-    "test": "node --import tsx --test tests/domain.test.ts tests/providers.test.ts",
+    "test": "node --import tsx --test tests/domain.test.ts tests/email.test.ts tests/providers.test.ts",
     "test:smoke": "node --import tsx tests/smoke.ts",
     "test:gateway": "node --import tsx tests/gateway-smoke.ts",
     "test:webhook": "node --import tsx tests/webhook-smoke.ts",

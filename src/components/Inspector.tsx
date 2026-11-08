@@ -56,7 +56,9 @@ function IncidentDetail({incident, data, onSelect, onAction, canAct}: {incident:
   const call = data.calls.find(c => c.id === incident.id);
   const p = provenance(incident.sourceKind);
   const canProtect = incident.status === 'analyzed' || incident.status === 'linked';
-  const body = parseMessage(incident.summary).body || incident.summary;
+  const parsed = parseMessage(incident.summary);
+  const body = parsed.body || incident.summary;
+  const authLine = incident.summary.match(/^Auth:\s*(.*)$/im)?.[1];
   return (
     <article className="detail">
       <p className="eyebrow">{CHANNEL_LABEL[incident.channel] ?? incident.channel} · <span className={`tone-${p.tone}`}>{p.label}</span> · {timeAgo(incident.createdAt)}</p>
@@ -64,9 +66,11 @@ function IncidentDetail({incident, data, onSelect, onAction, canAct}: {incident:
       <p className={`risk-line risk-${incident.riskLevel}`}>{RISK_LABEL[incident.riskLevel]} <span className="quiet">· {incident.confidenceLabel} confidence</span></p>
       <Steps status={incident.status} />
 
-      {(incident.senderDomain || call) && (
+      {(incident.senderDomain || call || authLine) && (
         <dl className="facts">
           {incident.senderDomain && <><dt>Sender</dt><dd className="mono">{incident.senderDomain}</dd></>}
+          {parsed.replyToDomain && parsed.replyToDomain !== incident.senderDomain && <><dt>Replies to</dt><dd className="mono">{parsed.replyToDomain}</dd></>}
+          {authLine && <><dt>Sender checks</dt><dd className={parsed.authFailures.length ? 'mono tone-high' : 'mono'}>{parsed.authFailures.length ? `Failed: ${parsed.authFailures.join(', ')}` : authLine}</dd></>}
           {call && <><dt>Call length</dt><dd className="mono">{duration(call.durationSecs)}</dd></>}
         </dl>
       )}
