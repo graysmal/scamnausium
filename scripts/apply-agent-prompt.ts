@@ -1,4 +1,5 @@
-// Applies docs/voice-agent-prompt.md to the ElevenLabs agent and enables the end_call system tool.
+// Applies docs/voice-agent-prompt.md to the ElevenLabs agent, enables the end_call system tool,
+// calms the voice (higher stability, slightly slower) and caps call length so the honeypot can't burn credits.
 //   npm run agent:prompt               preview only (reads the agent, writes a backup, changes nothing)
 //   npm run agent:prompt -- --apply    PATCH the agent
 // Needs ELEVENLABS_API_KEY (agent read/write) and ELEVENLABS_AGENT_ID. Endpoint and field names from @elevenlabs/elevenlabs-js 2.77.
@@ -18,13 +19,17 @@ const block = (name: string) => {
 };
 const firstMessage = block('first-message');
 const systemPrompt = block('system-prompt');
+// Calm, slightly slow "Pat": higher stability reads as less excitable; speed 1.0 is normal (range about 0.7–1.2).
+const VOICE = {stability: 0.75, speed: 0.92};
+const maxCallSecs = Math.min(Math.max(Number(process.env.AGENT_MAX_CALL_SECS ?? 600), 60), 1800);
 
 const url = `https://api.elevenlabs.io/v1/convai/agents/${encodeURIComponent(agentId)}`;
 const headers = {'xi-api-key': apiKey, 'Content-Type': 'application/json'};
 
 const res = await fetch(url, {headers});
 if (!res.ok) throw new Error(`GET agent failed: ${res.status} ${await res.text()}`);
-const agent = (await res.json()) as {name?: string; conversation_config?: {agent?: {first_message?: string; prompt?: Record<string, unknown>}}};
+type Json = Record<string, unknown>;
+const agent = (await res.json()) as {name?: string; conversation_config?: {agent?: {first_message?: string; prompt?: Json}; tts?: Json; conversation?: Json}};
 mkdirSync('.agent-backups', {recursive: true});
 const backup = `.agent-backups/${agentId}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
 writeFileSync(backup, JSON.stringify(agent, null, 2));
@@ -35,6 +40,10 @@ console.log(`Agent: ${agent.name ?? agentId}  (backup: ${backup})`);
 console.log(`First message: ${JSON.stringify(agent.conversation_config?.agent?.first_message ?? '')} -> ${JSON.stringify(firstMessage)}`);
 console.log(`Prompt: ${String(currentPrompt.prompt ?? '').length} chars -> ${systemPrompt.length} chars`);
 console.log(`end_call tool: ${builtIn.end_call ? 'already on' : 'off -> on'}`);
+const tts = agent.conversation_config?.tts ?? {};
+const conversation = agent.conversation_config?.conversation ?? {};
+console.log(`Voice: stability ${tts.stability ?? 'default'} -> ${VOICE.stability}, speed ${tts.speed ?? 'default'} -> ${VOICE.speed}`);
+console.log(`Max call length: ${conversation.max_duration_seconds ?? 'default'}s -> ${maxCallSecs}s`);
 
 if (!apply) {
   console.log('\nPreview only. Re-run with --apply to update the agent.');
@@ -55,6 +64,9 @@ const body = {
         },
       },
     },
+    // Only the changed fields: echoing the whole tts/conversation objects back could include read-only ones.
+    tts: VOICE,
+    conversation: {max_duration_seconds: maxCallSecs},
   },
 };
 const patch = await fetch(url, {method: 'PATCH', headers, body: JSON.stringify(body)});

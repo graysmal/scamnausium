@@ -2,7 +2,7 @@
 
 Fixes the teammate's complaints: the agent admitted the call was a scam, didn't hang up after "have a good day", and sounded like over-excited AI.
 
-**Apply:** paste the two blocks below into the ElevenLabs agent (Agent → First message / System prompt), then turn on the **End call** system tool (Agent → Tools → System tools). Or run `npm run agent:prompt` to preview and `npm run agent:prompt -- --apply` to apply. The script saves a backup of the current agent config to `.agent-backups/` first.
+**Apply:** paste the two blocks below into the ElevenLabs agent (Agent → First message / System prompt), then turn on the **End call** system tool (Agent → Tools → System tools), raise voice stability to about 0.75, and set a max call length. Or run `npm run agent:prompt` to preview and `npm run agent:prompt -- --apply` to apply. The script saves a backup of the current agent config to `.agent-backups/` first.
 
 Why it admitted the scam: our earlier `docs/SETUP.md` prompt said "Introduce the session as a simulation." That line is gone.
 
@@ -36,7 +36,8 @@ Ending the call:
 ```
 
 ## Recommended ElevenLabs settings
-- Voice: an older, calm voice. Lower stability slightly for natural variation.
+- Voice: an older, calm voice. Stability around 0.75 and speed 0.92: low stability is what makes the voice sound over-excited. The script sets both.
+- Max call length: 600 s (override with `AGENT_MAX_CALL_SECS`), so a long call can't run up the bill.
 - LLM temperature: around 0.6.
 - Max conversation duration: 10 minutes, so test calls don't burn credits.
 - Turn on Analysis → Summary, so `transcript_summary` and `call_summary_title` exist. The app uses them to file the call.
