@@ -32,15 +32,15 @@
 - [x] Create incidents, campaigns, indicators, decoy sessions/events, interventions and dedupe records as needed.
 - [x] Implement validated incident and session reducer transitions.
 - [x] Seed 3 synthetic scam scenarios (delivery fee, fake bank security alert, fraudulent customer support call).
-- [ ] Build connected incident feed + campaign graph + live counters.
-- [ ] Build customer view with risk, evidence, confidence, next steps, and data-source label.
+- [x] Build connected incident feed + campaign graph + live counters.
+- [x] Build customer view with risk, evidence, confidence, next steps, and data-source label.
 
 **Gate:** Two incident variants link to one campaign and both browser views react immediately.
 
 ## Hour 3–5 — Decoy and detection
 
-- [ ] Add deterministic scam checks for requests for OTP, card/payment details, urgency, brand impersonation, and suspicious link patterns.
-- [ ] Return structured evidence and confidence labels; optionally enrich wording with an LLM.
+- [x] Add deterministic scam checks for requests for OTP, card/payment details, urgency, brand impersonation, and suspicious link patterns.
+- [x] Return structured evidence and confidence labels; optionally enrich wording with an LLM. _(no LLM)_
 - [ ] Implement controlled first-party mock collector and a small synthetic persona library.
 - [x] Add operator-triggered bounded decoy run (never third-party traffic, never unbounded loops).
 - [ ] Chart actual simulated collector data; show decoy ratio and counts honestly.
@@ -61,8 +61,8 @@
 ## Hour 8–10 — Freeze features and polish
 
 - [ ] Improve command-center visual hierarchy, animation of new events, typography, and status contrast.
-- [ ] Provide a single `Reset demo` button that only affects team-owned synthetic data.
-- [ ] Add loading/error states and dedupe/reconnect handling.
+- [x] Provide a single `Reset demo` button that only affects team-owned synthetic data.
+- [x] Add loading/error states and dedupe/reconnect handling.
 - [ ] Run one full scripted demonstration on the presentation machine.
 - [x] Make every `SIMULATED` and `LIVE` indicator reflect actual provenance. _Labels derive from stored `sourceKind`; status upgrades only after a verified event. Not yet eyeballed in a browser._
 
@@ -75,7 +75,7 @@
 - [x] Verify no credentials/real contacts in frontend bundles or public tables. _Bundle scanned against .env values (2026-11-08); webhook test asserts transcript/phone/provider ID absent from incidents._
 - [ ] Capture real fallback evidence (screen recording of verified integrations) if permitted.
 - [ ] Test no-network fallback and explain what is simulated.
-- [ ] Rehearse `docs/DEMO.md` and assign team speaking roles.
+- [ ] Rehearse `docs/DEMO.md` and assign team speaking roles. _(script rewritten for the new UI)_
 - [ ] Update README `Status` truthfully.
 
 ## Scope cuts in priority order
