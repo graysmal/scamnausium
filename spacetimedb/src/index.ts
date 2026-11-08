@@ -1,5 +1,5 @@
 import { schema, table, t, SenderError, type ReducerCtx } from 'spacetimedb/server';
-import { scenarios, analyze, transition, type Scenario } from './domain';
+import { scenarios, analyze, transition, sanitizeSummary, externalSources, type Scenario, type ExternalSource } from './domain';
 const db = schema({
  operator:table({}, {id:t.u32().primaryKey(),identity:t.identity()}),
  incidents:table({public:true},{id:t.string().primaryKey(),scenarioId:t.string(),channel:t.string(),summary:t.string(),riskLevel:t.string(),confidenceLabel:t.string(),status:t.string(),campaignId:t.string().index('btree'),sourceKind:t.string(),createdAt:t.timestamp()}),
@@ -20,6 +20,18 @@ export const reportIncident=db.reducer({eventId:t.string(),scenarioId:t.string()
  if(ctx.db.incidents.count()>=200n) throw new SenderError('Reset the synthetic demo before adding more incidents');
  const scenario=scenarios[scenarioId as Scenario], a=analyze(scenario.text);
  ctx.db.incidents.insert({id:eventId,scenarioId,channel:scenario.channel,summary:scenario.text,riskLevel:'high',confidenceLabel:a.confidence,status:'reported',campaignId:'',sourceKind:scenarioId==='voice'?'voice_simulation':'manual_demo',createdAt:ctx.timestamp});
+});
+// Externally sourced report (verified provider event). Gateway passes an opaque hashed eventId and an already-sanitized summary;
+// the summary is sanitized again here so raw contact details can never land in this public table.
+export const reportExternalIncident=db.reducer({eventId:t.string(),source:t.string(),summary:t.string()},(ctx,{eventId,source,summary})=>{
+ authorize(ctx);
+ if(!/^(el|ph)-[a-f0-9]{32}$/.test(eventId)||!Object.prototype.hasOwnProperty.call(externalSources,source)) throw new SenderError('Invalid external event');
+ if(ctx.db.incidents.id.find(eventId)) return;
+ const clean=sanitizeSummary(summary);
+ if(!clean) throw new SenderError('Empty summary');
+ if(ctx.db.incidents.count()>=200n) throw new SenderError('Reset the synthetic demo before adding more incidents');
+ const a=analyze(clean);
+ ctx.db.incidents.insert({id:eventId,scenarioId:'external',channel:externalSources[source as ExternalSource],summary:clean,riskLevel:a.confidence,confidenceLabel:a.confidence,status:'reported',campaignId:'',sourceKind:source,createdAt:ctx.timestamp});
 });
 export const analyzeIncident=db.reducer({incidentId:t.string()},(ctx,{incidentId})=>{
  authorize(ctx); const row=ctx.db.incidents.id.find(incidentId); if(!row) throw new SenderError('Incident missing');

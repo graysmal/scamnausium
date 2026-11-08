@@ -13,7 +13,7 @@
     "spacetime:publish": "spacetime publish --module-path spacetimedb --server maincloud",
     "gateway": "node --import tsx services/gateway/src/index.ts",
     "setup:local": "node scripts/setup-local.mjs",
-    "test": "node --import tsx --test tests/domain.test.ts",
+    "test": "node --import tsx --test tests/domain.test.ts tests/providers.test.ts",
     "test:smoke": "node --import tsx tests/smoke.ts",
     "check": "tsc --noEmit && tsc --noEmit -p spacetimedb/tsconfig.json && tsc --noEmit -p tsconfig.gateway.json"
   },

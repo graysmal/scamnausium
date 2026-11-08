@@ -38,6 +38,7 @@ import AnalyzeIncidentReducer from "./analyze_incident_reducer";
 import LinkIncidentReducer from "./link_incident_reducer";
 import ProtectIncidentReducer from "./protect_incident_reducer";
 import RecordDecoyEventReducer from "./record_decoy_event_reducer";
+import ReportExternalIncidentReducer from "./report_external_incident_reducer";
 import ReportIncidentReducer from "./report_incident_reducer";
 import ResetDemoReducer from "./reset_demo_reducer";
 import StartDecoySessionReducer from "./start_decoy_session_reducer";
@@ -142,6 +143,7 @@ const reducersSchema = __reducers(
   __reducerSchema("link_incident", LinkIncidentReducer),
   __reducerSchema("protect_incident", ProtectIncidentReducer),
   __reducerSchema("record_decoy_event", RecordDecoyEventReducer),
+  __reducerSchema("report_external_incident", ReportExternalIncidentReducer),
   __reducerSchema("report_incident", ReportIncidentReducer),
   __reducerSchema("reset_demo", ResetDemoReducer),
   __reducerSchema("start_decoy_session", StartDecoySessionReducer),
