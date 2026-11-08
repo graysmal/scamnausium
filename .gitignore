@@ -1,8 +1,45 @@
 node_modules/
 dist/
-.env
-.env.*
-!.env.example
 spacetime.local.json
 *.log
 *.tsbuildinfo
+
+# --- Secrets: never commit ---
+# dotenv files (any name variant, any directory)
+.env
+.env.*
+env
+env.*
+*.env
+*.env.*
+.envrc
+# keep the placeholder template
+!.env.example
+!env.example
+!*.env.example
+
+# keys, certs, credential dumps
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa*
+id_ed25519*
+*credentials*.json
+*secret*.json
+service-account*.json
+.npmrc
+
+# SpacetimeDB local identity/tokens
+.spacetime/
+spacetime.local.*
+
+# --- Local tooling / OS noise ---
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+coverage/
+.vite/
