@@ -104,3 +104,7 @@ export const graphStyle: StylesheetJson = [
   {selector: 'node.fresh', style: {'underlay-opacity': 0.22, 'underlay-padding': 14, 'transition-duration': 900, label: 'data(label)', color: GRAPH_COLORS.ink}},
   {selector: 'node.fresh[risk = "pending"]', style: {'underlay-color': GRAPH_COLORS.live}},
 ];
+
+/** Graph filter groups: texts include SMS and iMessage. */
+export type ChannelFilter = 'all' | 'text' | 'email' | 'call';
+export const CHANNEL_GROUP: Record<string, Exclude<ChannelFilter, 'all'>> = {sms: 'text', imessage: 'text', email: 'email', call: 'call'};

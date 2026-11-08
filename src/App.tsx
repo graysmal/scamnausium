@@ -7,7 +7,7 @@ import { Inspector, type ScamData } from './components/Inspector';
 import { CustomerView } from './views/CustomerView';
 import { CollectorView } from './views/CollectorView';
 import { SetupView } from './views/SetupView';
-import { buildElements, type Selection } from './lib/graph';
+import { buildElements, CHANNEL_GROUP, type ChannelFilter, type Selection } from './lib/graph';
 import { duration } from './lib/format';
 import { ApiError, postAction, postReport, useGatewayStatus, type Action, type ProviderState } from './lib/api';
 import './style.css';
@@ -88,7 +88,13 @@ export default function App() {
 
   const setSecret = useCallback((value: string) => { setSecretState(value); writeSecret(value); }, []);
   const data: ScamData = useMemo(() => ({incidents, campaigns, indicators, interventions, calls}), [incidents, campaigns, indicators, interventions, calls]);
-  const elements = useMemo(() => buildElements(incidents, campaigns, indicators, calls), [incidents, campaigns, indicators, calls]);
+  const [channelFilter, setChannelFilter] = useState<ChannelFilter>('all');
+  const elements = useMemo(() => {
+    if (channelFilter === 'all') return buildElements(incidents, campaigns, indicators, calls);
+    const shown = incidents.filter(i => CHANNEL_GROUP[i.channel] === channelFilter);
+    const campaignIds = new Set(shown.map(i => i.campaignId));
+    return buildElements(shown, campaigns.filter(c => campaignIds.has(c.id)), indicators, channelFilter === 'call' ? calls : []);
+  }, [incidents, campaigns, indicators, calls, channelFilter]);
   const incidentIds = useMemo(() => new Set(incidents.map(i => i.id)), [incidents]);
   const canAct = Boolean(secret) && isActive && !busy;
   // The first connection takes a moment; only call it "down" if it stays down.
@@ -160,7 +166,7 @@ export default function App() {
                   <div><dt>Caller time wasted</dt><dd>{duration(wastedSecs)}</dd></div>
                   <div><dt>Decoy share</dt><dd>{decoyShare}%</dd></div>
                 </dl>
-                <NetworkGraph elements={elements} selection={selection} onSelect={setSelection} />
+                <NetworkGraph elements={elements} selection={selection} onSelect={setSelection} filter={channelFilter} onFilter={setChannelFilter} />
               </div>
               <div className="inspector">
                 {selection && <button type="button" className="link back" onClick={() => setSelection(null)}>← Latest reports</button>}

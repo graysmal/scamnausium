@@ -1,11 +1,17 @@
 import { useEffect, useRef } from 'react';
 import cytoscape, { type Core, type ElementDefinition, type LayoutOptions } from 'cytoscape';
-import { graphStyle, nodeId, parseNodeId, type Selection } from '../lib/graph';
+import { graphStyle, nodeId, parseNodeId, type ChannelFilter, type Selection } from '../lib/graph';
+
+const FILTERS: {id: ChannelFilter; label: string}[] = [
+  {id: 'all', label: 'All'}, {id: 'text', label: 'Texts'}, {id: 'email', label: 'Emails'}, {id: 'call', label: 'Calls'},
+];
 
 interface Props {
   elements: ElementDefinition[];
   selection: Selection;
   onSelect: (selection: Selection) => void;
+  filter: ChannelFilter;
+  onFilter: (filter: ChannelFilter) => void;
 }
 
 const layoutOptions = (fit: boolean, animate: boolean): LayoutOptions => ({
@@ -17,12 +23,13 @@ const layoutOptions = (fit: boolean, animate: boolean): LayoutOptions => ({
 const selectionNodeId = (s: Selection) => (s ? nodeId[s.kind](s.id) : '');
 
 /** Interactive campaign network: drag, select, zoom. Cytoscape owns the canvas; React owns the data. */
-export function NetworkGraph({elements, selection, onSelect}: Props) {
+export function NetworkGraph({elements, selection, onSelect, filter, onFilter}: Props) {
   const container = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   const hasFit = useRef(false);
+  const seen = useRef(new Set<string>()); // node ids ever shown, so filter changes don't look like arrivals
   const layoutTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -61,7 +68,8 @@ export function NetworkGraph({elements, selection, onSelect}: Props) {
           const anchor = otherId ? cy.getElementById(String(otherId)) : undefined;
           const base = anchor?.nonempty() ? anchor.position() : center;
           cy.add({...def, position: {x: base.x + (Math.random() - 0.5) * 60, y: base.y + (Math.random() - 0.5) * 60}});
-          if (hasFit.current && def.data.kind === 'incident') arrived.push(id);
+          if (hasFit.current && def.data.kind === 'incident' && !seen.current.has(id)) arrived.push(id);
+          seen.current.add(id);
         }
         structural = true;
       }
@@ -108,7 +116,12 @@ export function NetworkGraph({elements, selection, onSelect}: Props) {
   return (
     <div className="graph">
       <div ref={container} className="graph-canvas" aria-label="Campaign network. Drag nodes to rearrange, click to inspect." role="application" />
-      {elements.length === 0 && <p className="graph-empty">Reports and calls appear here as they arrive.</p>}
+      {elements.length === 0 && <p className="graph-empty">{filter === 'all' ? 'Reports and calls appear here as they arrive.' : 'Nothing in this filter yet.'}</p>}
+      <div className="graph-filter" role="radiogroup" aria-label="Show channel">
+        {FILTERS.map(f => (
+          <button key={f.id} type="button" role="radio" aria-checked={filter === f.id} className={filter === f.id ? 'on' : undefined} onClick={() => onFilter(f.id)}>{f.label}</button>
+        ))}
+      </div>
       <div className="graph-tools">
         <button type="button" className="ghost" onClick={fit}>Fit</button>
         <button type="button" className="ghost" onClick={relayout}>Re-arrange</button>
