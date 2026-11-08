@@ -184,3 +184,20 @@ test('call poller: live call upserted once per change, summarized call ingested 
   assert.ok(!reports[0].includes('555'));
   assert.equal(poller.status.activeCalls, 0);
 });
+
+test('call poller files a finished call without a summary after the grace period', async () => {
+  let clock = 1_000_000;
+  const done: ConversationSummary = { conversationId: 'conv-2', status: 'done', startTimeUnixSecs: 0, callDurationSecs: 40, transcriptSummary: '', title: '' };
+  const reports: string[] = []; const starts: number[] = [];
+  const poller = createCallPoller({ list: async () => [done] }, {
+    upsertCall: async c => { starts.push(c.startedAtSecs); },
+    ingest: async r => { reports.push(r.summary); return 'created'; },
+  }, 3600, () => clock);
+  await poller.pollOnce();
+  assert.equal(reports.length, 0, 'waits for a summary first');
+  assert.ok(starts[0] > 0, 'missing start time falls back to now, not 1970');
+  clock += 121_000;
+  await poller.pollOnce(); await poller.pollOnce();
+  assert.equal(reports.length, 1);
+  assert.match(reports[0], /^Honeypot call\. No summary/);
+});

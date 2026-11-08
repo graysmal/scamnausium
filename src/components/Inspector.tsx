@@ -142,11 +142,24 @@ function IndicatorDetail({fingerprint, data, onSelect}: {fingerprint: string; da
   );
 }
 
+function CallInProgress({call}: {call: Calls}) {
+  const live = call.status === 'in_progress' || call.status === 'ringing';
+  return (
+    <article className="detail">
+      <p className="eyebrow"><span className="tone-live">Honeypot call</span> · {timeAgo(call.startedAt)}</p>
+      <h2 className="detail-title">{live ? 'Call in progress' : call.status === 'processing' ? 'Call ended, summarizing' : 'Call ended'}</h2>
+      <p className="quiet">The agent is keeping the caller on the line. The call is filed as a report once ElevenLabs has a summary.</p>
+    </article>
+  );
+}
+
 export function Inspector(props: Props) {
   const {data, selection, onSelect} = props;
   if (selection?.kind === 'incident') {
     const incident = data.incidents.find(i => i.id === selection.id);
-    if (incident) return <IncidentDetail incident={incident} {...props} />;
+    if (incident) return <IncidentDetail key={incident.id} incident={incident} {...props} />;
+    const call = data.calls.find(c => c.id === selection.id);
+    if (call) return <CallInProgress call={call} />;
   }
   if (selection?.kind === 'campaign') {
     const campaign = data.campaigns.find(c => c.id === selection.id);

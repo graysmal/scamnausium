@@ -72,7 +72,7 @@ export default function App() {
 
   const setSecret = useCallback((value: string) => { setSecretState(value); writeSecret(value); }, []);
   const data: ScamData = useMemo(() => ({incidents, campaigns, indicators, interventions, calls}), [incidents, campaigns, indicators, interventions, calls]);
-  const elements = useMemo(() => buildElements(incidents, campaigns, indicators), [incidents, campaigns, indicators]);
+  const elements = useMemo(() => buildElements(incidents, campaigns, indicators, calls), [incidents, campaigns, indicators, calls]);
   const incidentIds = useMemo(() => new Set(incidents.map(i => i.id)), [incidents]);
   const canAct = Boolean(secret) && isActive && !busy;
 
@@ -127,6 +127,8 @@ export default function App() {
           onOpenIncident={id => { setSelection({kind: 'incident', id}); setView('network'); }} />
 
         <main className="main">
+          {!isActive && <div className="notice notice-error" role="alert">Not connected to the database. Start it with <span className="mono">spacetime start</span>, then reload.</div>}
+          {isActive && !status.reachable && <div className="notice notice-error" role="alert">Gateway is not running. Start it with <span className="mono">npm run gateway</span> to use controls and see calls.</div>}
           {notice && <div className={`notice notice-${notice.tone}`} role={notice.tone === 'error' ? 'alert' : 'status'}>{notice.text}<button type="button" className="link" onClick={() => setNotice(null)}>Dismiss</button></div>}
           {view === 'network' && (
             <div className="network">

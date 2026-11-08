@@ -1,5 +1,5 @@
 import type { ElementDefinition, StylesheetJson } from 'cytoscape';
-import type { Campaigns, Incidents, Indicators } from '../module_bindings/types';
+import type { Calls, Campaigns, Incidents, Indicators } from '../module_bindings/types';
 
 export type Selection = {kind: 'incident' | 'campaign' | 'indicator'; id: string} | null;
 
@@ -33,7 +33,7 @@ export function sharedIndicators(indicators: readonly Indicators[]): Map<string,
   return groups;
 }
 
-export function buildElements(incidents: readonly Incidents[], campaigns: readonly Campaigns[], indicators: readonly Indicators[]): ElementDefinition[] {
+export function buildElements(incidents: readonly Incidents[], campaigns: readonly Campaigns[], indicators: readonly Indicators[], calls: readonly Calls[] = []): ElementDefinition[] {
   const elements: ElementDefinition[] = [];
   const incidentIds = new Set(incidents.map(i => i.id));
   for (const c of campaigns) {
@@ -46,6 +46,12 @@ export function buildElements(incidents: readonly Incidents[], campaigns: readon
     if (i.campaignId && campaignIds.has(i.campaignId)) {
       elements.push({group: 'edges', data: {id: `e|${i.id}|${i.campaignId}`, source: nodeId.incident(i.id), target: nodeId.campaign(i.campaignId), kind: 'member'}});
     }
+  }
+  // A call that has not been filed yet shows as a pending node with the incident's future id,
+  // so the same node turns into the filed report (and links to its campaign) when the summary lands.
+  for (const call of calls) {
+    if (incidentIds.has(call.id) || call.status === 'failed' || call.status === 'done') continue;
+    elements.push({group: 'nodes', data: {id: nodeId.incident(call.id), kind: 'incident', label: call.status === 'processing' ? 'Summarizing call' : 'Live call', risk: 'pending', channel: 'call', live: 1, protected: 0}});
   }
   for (const [fingerprint, g] of sharedIndicators(indicators)) {
     const linked = [...g.incidentIds].filter(id => incidentIds.has(id));
@@ -78,6 +84,7 @@ export const graphStyle: StylesheetJson = [
   }},
   {selector: 'node[kind = "incident"][risk = "high"]', style: {'background-color': GRAPH_COLORS.high}},
   {selector: 'node[kind = "incident"][risk = "medium"]', style: {'background-color': GRAPH_COLORS.medium}},
+  {selector: 'node[kind = "incident"][risk = "pending"]', style: {'background-color': GRAPH_COLORS.live, label: 'data(label)', color: GRAPH_COLORS.live, 'font-weight': 600}},
   {selector: 'node[kind = "incident"][channel = "email"]', style: {shape: 'round-rectangle'}},
   {selector: 'node[kind = "incident"][channel = "call"]', style: {shape: 'diamond', width: 17, height: 17}},
   {selector: 'node[kind = "incident"][live = 1]', style: {'border-width': 3, 'border-color': GRAPH_COLORS.live}},

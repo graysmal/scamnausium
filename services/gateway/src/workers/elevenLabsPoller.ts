@@ -9,6 +9,8 @@ import type { ExternalReport, IngestOutcome } from '../ingest';
  */
 export const MIN_INTERVAL_MS = 8_000;
 export const MAX_BACKOFF_MS = 120_000;
+/** File a finished call without a summary after this long (agent may have Analysis turned off). */
+export const SUMMARY_GRACE_MS = 120_000;
 const API = 'https://api.elevenlabs.io/v1/convai/conversations';
 
 export interface ConversationSummary {
@@ -58,10 +60,11 @@ export interface CallSink {
 
 export interface CallPollerStatus { lastPollAt?: string; lastCallAt?: string; activeCalls: number; lastError?: string }
 
-export function createCallPoller(source: ConversationSource, sink: CallSink, lookbackSecs = 3600) {
+export function createCallPoller(source: ConversationSource, sink: CallSink, lookbackSecs = 3600, now: () => number = Date.now) {
   const startedFrom = Math.floor(Date.now() / 1000) - lookbackSecs;
   const lastState = new Map<string, string>();
   const ingested = new Set<string>();
+  const doneSince = new Map<string, number>();
   const status: CallPollerStatus = {activeCalls: 0};
 
   async function pollOnce(): Promise<void> {
@@ -75,13 +78,20 @@ export function createCallPoller(source: ConversationSource, sink: CallSink, loo
       const title = sanitizeSummary(c.title, 120);
       const fingerprint = `${normalized}|${c.callDurationSecs}|${title}`;
       if (lastState.get(id) !== fingerprint) {
-        await sink.upsertCall({id, providerStatus: c.status, startedAtSecs: c.startTimeUnixSecs, durationSecs: Math.round(c.callDurationSecs), title});
+        const startedAtSecs = c.startTimeUnixSecs > 0 ? c.startTimeUnixSecs : Math.floor(now() / 1000);
+        await sink.upsertCall({id, providerStatus: c.status, startedAtSecs, durationSecs: Math.round(c.callDurationSecs), title});
         lastState.set(id, fingerprint);
         status.lastCallAt = new Date().toISOString();
       }
-      if (normalized === 'done' && c.transcriptSummary && !ingested.has(id)) {
-        await sink.ingest({eventId: id, source: 'elevenlabs_call', channel: 'call', summary: callReportText(c.title, c.transcriptSummary)});
-        ingested.add(id);
+      if (normalized === 'done' && !ingested.has(id)) {
+        if (!doneSince.has(id)) doneSince.set(id, now());
+        const waitedOut = now() - (doneSince.get(id) ?? now()) >= SUMMARY_GRACE_MS;
+        if (c.transcriptSummary || waitedOut) {
+          const summary = c.transcriptSummary || 'No summary was produced for this call. Turn on Analysis in the ElevenLabs agent to get one.';
+          await sink.ingest({eventId: id, source: 'elevenlabs_call', channel: 'call', summary: callReportText(c.title, summary)});
+          ingested.add(id);
+          doneSince.delete(id);
+        }
       }
     }
     status.activeCalls = active;
