@@ -4,7 +4,11 @@ Branch: `overnight/v2`. It includes `chore/gitignore-slopdocs` and `overnight/in
 
 ## What changed
 - **Phone calls show up in the app.** The gateway polls ElevenLabs' conversations API (read-only, no tunnel needed). A live call shows as "In progress" in the left rail. When it ends, its summary becomes an incident. The ElevenLabs webhook also works if you set up a tunnel.
-- **Paste any text or email to check it.** "Check a message" in the left rail. The rules analyzer covers brand impersonation, lookalike, shortened or IP links, sender and reply-to mismatches, gift-card and crypto requests, codes and passwords, threats, unpaid tolls and fake bills, job offers, "grandma I'm in jail", guaranteed-return investments and "wrong number" openers. Every flag is explained in plain language. Emails are parsed into sender, subject and body.
+- **Paste any text or email to check it.** "Check a message" in the left rail. The rules analyzer covers brand impersonation, lookalike, shortened or IP links, sender and reply-to mismatches, gift-card and crypto requests, codes and passwords, threats, unpaid tolls and fake bills, job offers, "grandma I'm in jail", guaranteed-return investments, "wrong number" openers, fake fraud alerts, "Hi Mom, new number", QR-code phishing, surprise renewals and requests for ID numbers. Every flag is explained in plain language. Emails are parsed into sender, subject and body.
+- **Raw emails (.eml).** Paste Gmail's "Show original" or drop an `.eml` file. Headers, MIME and HTML are decoded, links are kept, and failed SPF/DKIM/DMARC checks are flagged. Try `tests/fixtures/paypal-phish.eml`.
+- **Customer tab is a real tool.** Paste a message and get an instant verdict. It's computed in the browser and nothing is sent until you press **Report to protect others**. It also says when the message matches a known campaign.
+- **Browser extension** (`extension/`, load unpacked): right-click selected text, choose **Check with scamnasium**, and the Customer tab opens with that text checked.
+- **Campaigns** show their playbook (warning signs that recur across reports), the domains used, and caller time wasted. The graph has All / Texts / Emails / Calls filters, and new reports get a brief halo.
 - **New UI.** No green, no gradients. Controls are on the left, the graph is in the middle (Cytoscape: drag and click nodes), details are on the right. Also a customer view, collector and setup.
 - **iMessage:** texting a suspicious message to the Photon line files it as a report and, if replies are enabled, sends back a plain-language verdict ("Very likely a scam. Why: … Do this: …"). Polling is off by default. Replies need `ENABLE_LIVE_MESSAGING=true` and the sender in `ALLOWED_TEST_CONTACTS`.
 - **Live calls on the graph:** an in-progress call shows as a blue "Live call" node and turns into the filed report when it ends. The stats strip shows **Caller time wasted**, the real total length of honeypot calls.
@@ -35,4 +39,4 @@ HONEYPOT_NUMBER=+1 (617) 993-9239
 - Agent prompt fix is written but **not applied**: `docs/voice-agent-prompt.md`. Preview with `npm run agent:prompt`, apply with `npm run agent:prompt -- --apply` (saves a backup first), or paste it into the dashboard by hand. Also turn on the End call tool.
 - The duplicate `scamnasium/` folder from the first commit is still there. Delete it if nobody needs it.
 
-Checks that passed: `npm run check`, `npm test` (17), `npm run build`, `test:smoke`, `test:gateway`, `test:webhook`.
+Checks that passed: `npm run check`, `npm test` (20, incl. a 19-message analyzer corpus), `npm run build`, `test:smoke`, `test:gateway`, `test:webhook`.
