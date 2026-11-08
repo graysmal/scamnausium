@@ -1,40 +1,157 @@
-import { useEffect, useState } from 'react';
-import { tables } from './module_bindings';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSpacetimeDB, useTable } from 'spacetimedb/react';
+import { tables } from './module_bindings';
+import { NetworkGraph } from './components/NetworkGraph';
+import { OperatorRail } from './components/OperatorRail';
+import { Inspector, type ScamData } from './components/Inspector';
+import { CustomerView } from './views/CustomerView';
+import { CollectorView } from './views/CollectorView';
+import { SetupView } from './views/SetupView';
+import { buildElements, type Selection } from './lib/graph';
+import { ApiError, postAction, postReport, useGatewayStatus, type Action, type ProviderState } from './lib/api';
 import './style.css';
-type View='ops'|'customer'|'collector'|'setup';
-/** Provenance shown on every incident comes from the stored sourceKind, never from config or UI state. */
-const PROVENANCE:Record<string,{label:string;cls:string}>={
- manual_demo:{label:'SIMULATED',cls:'tag'},
- voice_simulation:{label:'SIMULATED VOICE',cls:'tag'},
- elevenlabs_call:{label:'PROVIDER CALL · VERIFIED WEBHOOK',cls:'tag provider'},
- photon_imessage:{label:'PROVIDER iMESSAGE · VERIFIED SENDER',cls:'tag provider'},
-};
-const provenance=(sourceKind:string)=>PROVENANCE[sourceKind]??{label:'UNKNOWN SOURCE',cls:'tag danger'};
-const riskClass=(risk:string)=>risk==='high'?'tag danger':risk==='medium'?'tag':'tag mint';
-const canShowGuidance=(status:string)=>status==='linked'||status==='analyzed';
-export default function App(){
- const {isActive}=useSpacetimeDB();
- const [incidents]=useTable(tables.incidents),[campaigns]=useTable(tables.campaigns),[indicators]=useTable(tables.indicators),[interventions]=useTable(tables.interventions),[sessions]=useTable(tables.decoySessions),[events]=useTable(tables.decoyEvents);
- const [view,setView]=useState<View>('ops'),[selected,setSelected]=useState(''),[secret,setSecret]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const [providers,setProviders]=useState({photon:'Gateway unavailable',voice:'Gateway unavailable'});
- useEffect(()=>{const check=()=>fetch('/api/status').then(r=>{if(!r.ok)throw Error();return r.json();}).then(setProviders).catch(()=>setProviders({photon:'Gateway unavailable',voice:'Gateway unavailable'}));void check();const id=setInterval(check,5000);return()=>clearInterval(id);},[]);
- const ordered=[...incidents].sort((a,b)=>Number(b.createdAt.microsSinceUnixEpoch-a.createdAt.microsSinceUnixEpoch));
- const current=incidents.find(i=>i.id===selected)??ordered[0], evidence=indicators.filter(i=>i.incidentId===current?.id),guidance=interventions.find(i=>i.incidentId===current?.id);
- const decoys=events.filter(e=>e.kind==='synthetic_decoy').length,ratio=events.length?Math.round(decoys/events.length*100):0;
- async function action(body:Record<string,string>){setBusy(true);setError('');try{const r=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${secret}`},body:JSON.stringify(body)});const data=await r.json();if(!r.ok)throw new Error(data.error);}catch(e){setError(e instanceof Error?e.message:'Action failed');}finally{setBusy(false);}}
- const disabled=busy||!isActive||!secret;
- const providerCount=incidents.filter(i=>i.sourceKind==='elevenlabs_call'||i.sourceKind==='photon_imessage').length;
- return <div className="shell"><aside><div className="brand"><span className="brandmark">s/</span>scamnasium<span className="beta">LAB</span></div><p className="eyebrow">COLLECTIVE DEFENSE</p><nav>{([['ops','◈','Command center'],['customer','◇','Customer protection'],['collector','▤','Mock collector'],['setup','⚙','Integration setup']] as const).map(([id,icon,label])=><button className={view===id?'active':''} key={id} onClick={()=>setView(id)}><span>{icon}</span>{label}</button>)}</nav><div className="sidebarBottom"><span className="pill">SYNTHETIC DEMO</span><p>Shared signals.<br/>Stronger protection.</p><small>Controlled research environment<br/>No external decoy traffic</small></div></aside>
- <main><header><div><p className="eyebrow">THREAT OPERATIONS / {view.toUpperCase()}</p><h1>{view==='ops'?'One report. A stronger network.':view==='customer'?'Know the risk. Take the next step.':view==='collector'?'Inside the controlled experiment.':'Connect your demo stack.'}</h1></div><span className={'connection '+(isActive?'online':'offline')}>● SpacetimeDB {isActive?'connected':'disconnected'}</span></header>
- <div className="notice"><span className="pill">SIMULATED</span>{providerCount?`Scenario incidents and collector records are fictional. ${providerCount} incident${providerCount===1?'':'s'} came from verified provider events (consenting team test contacts) and are labeled with their source.`:'All incident content and collector records are fictional. No verified provider event has been received.'}</div>
- <section className="metrics">{[['Reported incidents',incidents.length,'Synthetic reports'],['Linked campaigns',campaigns.length,'Shared evidence patterns'],['Guidance shown',incidents.filter(i=>i.status==='protected').length,'Not a carrier block'],['Collector decoy share',`${ratio}%`,`${decoys} decoys / ${events.length} synthetic records`]].map(([label,value,note])=><article key={label}><small>{label}</small><strong>{value}</strong><span>{note}</span></article>)}</section>
- {view==='setup'?<section className="setup panel"><p className="eyebrow">YOUR SETUP CHECKLIST</p><h2>Start with voice access.</h2><p>The local database and synthetic demo require no external account. Keep provider secrets in <code>.env</code>.</p><div className="setupgrid">{[['01','SpacetimeDB',isActive?'Connected':'Disconnected','Run the local server, publish the module, then run npm run setup:local. Maincloud is optional for a shared online demo.','https://spacetimedb.com/docs/quickstarts/react/'],['02','Photon 2.0',providers.photon,'Create a project and API key. Confirm a voice-capable line is available. Shared iMessage lines cannot receive calls.','https://photon.codes/docs/beta/get-started/voice'],['03','ElevenLabs',providers.voice,'Publish a fictional role-play agent, import the Photon number as a SIP trunk, assign the agent and test two-way audio. Then point a post-call webhook at /webhooks/elevenlabs (needs a public HTTPS tunnel).','https://elevenlabs.io/docs/eleven-agents/phone-numbers/sip-trunking'],['04','iMessage',providers.photon,'Use an iPhone or Mac test sender. Assign that exact identity to a Photon shared line, then initiate the conversation from Messages.','https://photon.codes/docs/beta/get-started/imessage']].map(([n,name,status,description,url])=><article key={n}><b>{n}</b><h3>{name}</h3><span className="tag">{status}</span><p>{description}</p><a href={url} target="_blank" rel="noreferrer">Official setup ↗</a></article>)}</div></section>:
- view==='collector'?<section className="panel"><div className="sectionhead"><div><p className="eyebrow">FIRST-PARTY ONLY</p><h2>Simulated scammer collector</h2></div><span className="pill">CONTROLLED EXPERIMENT</span></div><p>Each run writes 3 synthetic baseline records and 9 tagged decoys. The ratio below measures this constructed dataset, not real-world effectiveness.</p><div className="meter"><div style={{width:`${ratio}%`}}/></div><p>{sessions.length} sessions · {sessions.filter(s=>s.state==='engaging').length} running · {events.length} records</p><div className="tablewrap"><table><thead><tr><th>Record</th><th>Session</th><th>Classification</th><th>Provenance</th></tr></thead><tbody>{[...events].reverse().map(e=><tr key={e.id}><td>{e.id.slice(-8)}</td><td>{e.sessionId.slice(0,8)}</td><td><span className={e.kind==='synthetic_decoy'?'tag mint':'tag'}>{e.kind==='synthetic_decoy'?'Decoy':'Baseline'}</span></td><td>SIMULATED</td></tr>)}</tbody></table>{!events.length&&<div className="empty">Inject an incident, then launch a controlled decoy session.</div>}</div></section>:
- view==='customer'?<section className="customer panel"><p className="eyebrow">CUSTOMER PROTECTION / SYNTHETIC SCENARIO</p>{current?<><div className="badges"><span className={riskClass(current.riskLevel)}>{current.riskLevel.toUpperCase()} RISK</span><span className={provenance(current.sourceKind).cls}>{provenance(current.sourceKind).label}</span></div><h2>{campaigns.find(c=>c.id===current.campaignId)?.label??'Reported incident'}</h2><blockquote>{current.summary}</blockquote><h3>Why this deserves caution</h3>{evidence.length?<ul>{evidence.map(e=><li key={e.id}>{e.displayValue}</li>)}</ul>:<p>No common scam signals were detected in this report.</p>}<p>Confidence: <b>{current.confidenceLabel}</b>. Rules identify warning signs; this is not a verified finding about a real sender.</p><div className="advice"><p className="eyebrow">YOUR NEXT STEP</p><h3>{guidance?.recommendation??'Analysis pending.'}</h3></div><p>Status: <b>{current.status}</b> · No messages or calls have been blocked.</p><button disabled={disabled||!canShowGuidance(current.status)} onClick={()=>action({action:'protect',incidentId:current.id})}>Mark guidance shown</button><p className="muted">{current.sourceKind==='elevenlabs_call'||current.sourceKind==='photon_imessage'?'This report came from a consenting team test contact. Only a sanitized summary is stored: no transcript, phone number, email address or provider ID appears in these public tables.':'This demo uses fictional content. No personal inboxes, real transcripts, or phone numbers appear in these public tables.'}</p></>:<div className="empty">Inject a synthetic scenario to see the customer experience.</div>}</section>:
- <div className="workspace"><section className="panel feed"><div className="sectionhead"><h2>Incident feed</h2><span className="tag">{incidents.length}</span></div><p className="muted">Live database subscription</p>{ordered.map(i=><button key={i.id} className={'incident '+(current?.id===i.id?'selected':'')} onClick={()=>setSelected(i.id)}><div><span className="eyebrow">{i.channel} / {provenance(i.sourceKind).label}</span><span className="risk">{i.riskLevel.toUpperCase()}</span></div><h3>{campaigns.find(c=>c.id===i.campaignId)?.label??'New report'}</h3><p>{i.summary}</p><small>{i.status} <span>↗</span></small></button>)}{!incidents.length&&<div className="empty">Your network is ready.<br/>Inject the first synthetic report below.</div>}</section>
- <section className="panel network"><div className="sectionhead"><h2>Campaign network</h2><span className="tag mint">REACTIVE</span></div><p className="muted">Links derived from shared evidence</p><div className="graph">{campaigns.length?<svg viewBox={`0 0 500 ${Math.max(280,campaigns.length*170)}`} role="img" aria-label="Campaigns connected to related incidents">{campaigns.map((c,ci)=>{const y=85+ci*170;const related=incidents.filter(i=>i.campaignId===c.id);return <g key={c.id}>{related.slice(0,5).map((i,ii)=>{const ix=65+ii*85;return <g key={i.id}><path d={`M250 ${y} L${ix} ${y+78}`} stroke="#34564d"/><circle cx={ix} cy={y+78} r="13" fill={i.status==='protected'?'#a5edbb':'#192c29'} stroke="#a5edbb"/><text x={ix} y={y+109} textAnchor="middle" fill="#8faaa2" fontSize="11">{i.channel.toUpperCase()}</text></g>;})}<circle cx="250" cy={y} r="28" fill="#203c31" stroke="#b2f0c1"/><text x="250" y={y+5} textAnchor="middle" fill="#c5f6cf" fontSize="18">{c.incidentCount}</text><text x="250" y={y-44} textAnchor="middle" fill="#e5eee8" fontSize="14">{c.label}</text></g>;})}</svg>:<div className="empty">Campaign links appear after analysis.<br/>Start with Delivery, then Variant.</div>}</div><div className="graphnote"><span className="dot"/> Campaign correlation uses shared hostname and scam objective for the parcel fixtures. Links are heuristic, not proof of a common real-world attacker.</div></section>
- <section className="panel detail"><p className="eyebrow">EVIDENCE & RESPONSE</p>{current?<><h2>{campaigns.find(c=>c.id===current.campaignId)?.label??'Incident'}</h2><div className="badges"><span className={riskClass(current.riskLevel)}>{current.riskLevel} risk</span><span className="tag">{current.confidenceLabel} confidence</span><span className={provenance(current.sourceKind).cls}>{provenance(current.sourceKind).label}</span></div><blockquote>{current.summary}</blockquote>{evidence.map(e=><div className="evidence" key={e.id}><span>↗</span>{e.displayValue}</div>)}<div className="advice"><p className="eyebrow">RECOMMENDED ACTION</p><p>{guidance?.recommendation??'Analysis pending'}</p></div><button className="primary" disabled={disabled||!current.campaignId} onClick={()=>action({action:'decoys',campaignId:current.campaignId})}>{busy?'Working…':'Launch controlled decoys ↗'}</button><button disabled={disabled||!canShowGuidance(current.status)} onClick={()=>action({action:'protect',incidentId:current.id})}>Mark guidance shown</button></>:<div className="empty">Select an incident to inspect its signals.</div>}</section></div>}
- <section className="controls"><div><p className="eyebrow">OPERATOR CONTROLS</p><label><input type="password" autoComplete="off" value={secret} onChange={e=>setSecret(e.target.value)} placeholder="Local operator secret" aria-label="Local operator secret"/></label></div><div className="buttons">{(['delivery','variant','bank','voice'] as const).map(s=><button key={s} disabled={disabled} onClick={()=>action({action:'inject',scenarioId:s})}>+ {s==='voice'?'Simulated voice':s[0].toUpperCase()+s.slice(1)}</button>)}<button className="reset" disabled={disabled} onClick={()=>{if(window.confirm('Clear all synthetic incidents and collector records?'))void action({action:'reset'});}}>Reset demo</button></div></section>
- {error&&<div role="alert" className="error">{error}</div>}<footer><span>PHOTON · {providers.photon}</span><span>VOICE · {providers.voice}</span><span>No real-world prevention claims · v0.1</span></footer></main></div>;
+
+type View = 'network' | 'customer' | 'collector' | 'setup';
+const VIEWS: {id: View; label: string}[] = [
+  {id: 'network', label: 'Network'},
+  {id: 'customer', label: 'Customer'},
+  {id: 'collector', label: 'Collector'},
+  {id: 'setup', label: 'Setup'},
+];
+
+/** URL hash mirrors view + selection (e.g. #network/i/<id>, #customer) so demo states can be bookmarked. */
+function readHash(): {view: View; selection: Selection} {
+  const [rawView, kind, ...rest] = window.location.hash.replace(/^#\/?/, '').split('/');
+  const view = VIEWS.some(v => v.id === rawView) ? rawView as View : 'network';
+  const id = decodeURIComponent(rest.join('/'));
+  const map = {i: 'incident', c: 'campaign', x: 'indicator'} as const;
+  const selection = id && kind in map ? {kind: map[kind as keyof typeof map], id} : null;
+  return {view, selection};
+}
+function writeHash(view: View, selection: Selection) {
+  const code = {incident: 'i', campaign: 'c', indicator: 'x'} as const;
+  const short = selection ? `/${code[selection.kind]}/${encodeURIComponent(selection.id)}` : '';
+  const next = `#${view}${short}`;
+  if (window.location.hash !== next) window.history.replaceState(null, '', next);
+}
+
+const SECRET_KEY = 'scamnasium.operator';
+function readSecret(): string {
+  try { return sessionStorage.getItem(SECRET_KEY) ?? ''; } catch { return ''; }
+}
+function writeSecret(value: string) {
+  try { if (value) sessionStorage.setItem(SECRET_KEY, value); else sessionStorage.removeItem(SECRET_KEY); } catch { /* storage unavailable: keep in memory only */ }
+}
+
+function StatusDot({label, state, title}: {label: string; state: ProviderState; title: string}) {
+  return <span className={`status status-${state}`} title={title}><i aria-hidden />{label}</span>;
+}
+
+export default function App() {
+  const {isActive} = useSpacetimeDB();
+  const [incidents] = useTable(tables.incidents);
+  const [campaigns] = useTable(tables.campaigns);
+  const [indicators] = useTable(tables.indicators);
+  const [interventions] = useTable(tables.interventions);
+  const [calls] = useTable(tables.calls);
+  const [sessions] = useTable(tables.decoySessions);
+  const [events] = useTable(tables.decoyEvents);
+  const status = useGatewayStatus();
+
+  const [view, setView] = useState<View>(() => readHash().view);
+  const [selection, setSelection] = useState<Selection>(() => readHash().selection);
+  useEffect(() => writeHash(view, selection), [view, selection]);
+  useEffect(() => {
+    const onHash = () => { const h = readHash(); setView(h.view); setSelection(h.selection); };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  const [secret, setSecretState] = useState(readSecret);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<{tone: 'error' | 'info'; text: string} | null>(null);
+
+  const setSecret = useCallback((value: string) => { setSecretState(value); writeSecret(value); }, []);
+  const data: ScamData = useMemo(() => ({incidents, campaigns, indicators, interventions, calls}), [incidents, campaigns, indicators, interventions, calls]);
+  const elements = useMemo(() => buildElements(incidents, campaigns, indicators), [incidents, campaigns, indicators]);
+  const incidentIds = useMemo(() => new Set(incidents.map(i => i.id)), [incidents]);
+  const canAct = Boolean(secret) && isActive && !busy;
+
+  async function run<T>(task: () => Promise<T>): Promise<T | undefined> {
+    setBusy(true);
+    setNotice(null);
+    try {
+      return await task();
+    } catch (error) {
+      setNotice({tone: 'error', text: error instanceof ApiError ? error.message : 'Something went wrong.'});
+      return undefined;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const onAction = (action: Action) => void run(async () => {
+    const result = await postAction(secret, action);
+    if (action.action === 'reset') setSelection(null);
+    if (result.incidentId) setSelection({kind: 'incident', id: result.incidentId});
+  });
+
+  const onReport = async (text: string, channel: 'auto' | 'sms' | 'email' | 'imessage') => {
+    const result = await run(() => postReport(secret, text, channel));
+    if (!result) return false;
+    setSelection({kind: 'incident', id: result.incidentId});
+    if (result.outcome === 'duplicate') setNotice({tone: 'info', text: 'Already reported. Showing the existing record.'});
+    setView('network');
+    return true;
+  };
+
+  const liveCalls = calls.filter(c => c.status === 'in_progress' || c.status === 'ringing').length;
+  const decoyShare = events.length ? Math.round((events.filter(e => e.kind === 'synthetic_decoy').length / events.length) * 100) : 0;
+
+  return (
+    <div className="app">
+      <header className="topbar">
+        <div className="wordmark">scamnasium</div>
+        <nav className="tabs" aria-label="Views">
+          {VIEWS.map(v => <button key={v.id} type="button" aria-current={view === v.id ? 'page' : undefined} onClick={() => setView(v.id)}>{v.label}</button>)}
+        </nav>
+        <div className="statuses">
+          <StatusDot label="Database" state={isActive ? 'verified' : 'error'} title={isActive ? 'Connected' : 'Disconnected'} />
+          <StatusDot label="Calls" state={status.voice.state} title={status.voice.detail} />
+          <StatusDot label="iMessage" state={status.messaging.state} title={status.messaging.detail} />
+        </div>
+      </header>
+
+      <div className="body">
+        <OperatorRail secret={secret} onSecret={setSecret} busy={busy} calls={calls} status={status}
+          onReport={onReport} onAction={onAction} incidentIds={incidentIds}
+          onOpenIncident={id => { setSelection({kind: 'incident', id}); setView('network'); }} />
+
+        <main className="main">
+          {notice && <div className={`notice notice-${notice.tone}`} role={notice.tone === 'error' ? 'alert' : 'status'}>{notice.text}<button type="button" className="link" onClick={() => setNotice(null)}>Dismiss</button></div>}
+          {view === 'network' && (
+            <div className="network">
+              <div className="center">
+                <dl className="stats">
+                  <div><dt>Reports</dt><dd>{incidents.length}</dd></div>
+                  <div><dt>Campaigns</dt><dd>{campaigns.length}</dd></div>
+                  <div><dt>Honeypot calls</dt><dd>{calls.length}{liveCalls > 0 && <small className="live-count"> · {liveCalls} live</small>}</dd></div>
+                  <div><dt>Decoy share</dt><dd>{decoyShare}%</dd></div>
+                </dl>
+                <NetworkGraph elements={elements} selection={selection} onSelect={setSelection} />
+              </div>
+              <div className="inspector">
+                {selection && <button type="button" className="link back" onClick={() => setSelection(null)}>← Latest reports</button>}
+                <Inspector data={data} selection={selection} onSelect={setSelection} onAction={onAction} canAct={canAct} />
+              </div>
+            </div>
+          )}
+          {view === 'customer' && <CustomerView data={data} focusId={selection?.kind === 'incident' ? selection.id : undefined} onFocus={id => setSelection({kind: 'incident', id})} />}
+          {view === 'collector' && <CollectorView events={events} sessions={sessions} campaigns={campaigns} />}
+          {view === 'setup' && <SetupView status={status} dbActive={isActive} />}
+        </main>
+      </div>
+
+      <footer className="footnote">Scenario data is simulated. Real calls and messages come only from the team’s own test phones. Detection shows warning signs, not verdicts.</footer>
+    </div>
+  );
 }

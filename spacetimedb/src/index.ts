@@ -34,8 +34,8 @@ export default db;
 export const init = db.init(ctx => { ctx.db.operator.insert({id: 0, identity: ctx.sender}); });
 type Ctx = ReducerCtx<typeof db.schemaType>;
 type IncidentRow = NonNullable<ReturnType<Ctx['db']['incidents']['id']['find']>>;
-/** Re-assembles the stored (sanitized) message so analysis is reproducible from the row alone. */
-const analysisInput = (row: IncidentRow) => row.senderDomain ? `From: <sender@${row.senderDomain}>\nSubject: ${row.headline}\n\n${row.summary}` : row.summary;
+/** `summary` holds the full sanitized message (headers included), so analysis is reproducible from the row alone. */
+const analysisInput = (row: IncidentRow) => row.summary;
 
 function authorize(ctx: Ctx) {
   if (!ctx.db.operator.id.find(0)?.identity.isEqual(ctx.sender)) throw new SenderError('Operator only');
@@ -49,7 +49,7 @@ function insertIncident(ctx: Ctx, id: string, scenarioId: string, channel: strin
   const parsed = parseMessage(clean);
   const a = analyze(clean);
   ctx.db.incidents.insert({
-    id, scenarioId, channel, headline: parsed.headline, summary: parsed.body || clean, senderDomain: parsed.senderDomain,
+    id, scenarioId, channel, headline: parsed.headline, summary: clean, senderDomain: parsed.senderDomain,
     riskLevel: a.riskLevel, confidenceLabel: a.confidence, status: 'reported', campaignId: '', sourceKind, createdAt: ctx.timestamp,
   });
 }

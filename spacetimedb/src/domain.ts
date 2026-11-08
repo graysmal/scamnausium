@@ -52,6 +52,14 @@ export interface ParsedMessage {
   looksLikeEmail: boolean;
 }
 
+/** Shortens at a word boundary and marks the cut. */
+export function clip(text: string, max: number): string {
+  const t = text.trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), max * 0.6)).trimEnd()}…`;
+}
+
 const HEADER = /^(from|to|subject|reply-to|date|sent|cc):\s*(.*)$/i;
 const domainOf = (s: string) => s.match(/@([a-z0-9.-]+\.[a-z]{2,})/i)?.[1]?.toLowerCase() ?? '';
 
@@ -67,7 +75,7 @@ export function parseMessage(raw: string): ParsedMessage {
   const looksLikeEmail = 'subject' in headers || 'from' in headers;
   const body = (looksLikeEmail ? lines.slice(i) : lines).join('\n').trim();
   const firstSentence = body.split(/(?<=[.!?])\s|\n/)[0]?.trim() ?? '';
-  const headline = (headers.subject || firstSentence || body).slice(0, 110);
+  const headline = clip(headers.subject || firstSentence || body, 96);
   return {headline, body, senderDomain: domainOf(headers.from ?? ''), replyToDomain: domainOf(headers['reply-to'] ?? ''), looksLikeEmail};
 }
 
