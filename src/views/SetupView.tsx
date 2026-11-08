@@ -26,6 +26,16 @@ export function SetupView({status, dbActive}: {status: GatewayStatus; dbActive: 
       <Item title="iMessage reports" status={status.messaging}>
         <p>Texts from the team’s test phone to the Photon line become reports. Replies stay off unless explicitly enabled for allowlisted contacts.</p>
         <code>ENABLE_PHOTON_POLLING=true · PHOTON_AGENT_HANDLE · PHOTON_TEST_SENDER</code>
+        <p className="quiet small">Verdict replies: ENABLE_LIVE_MESSAGING=true and the sender in ALLOWED_TEST_CONTACTS.</p>
+      </Item>
+      <Item title="Voice agent" status={{state: 'off', detail: 'Manual step'}}>
+        <p>The honeypot persona “Pat” stays in character, never finishes a number, hangs up after goodbye, and speaks calmly. Calls are capped at 10 minutes.</p>
+        <code>npm run agent:prompt · npm run agent:prompt -- --apply</code>
+        <p className="quiet small">Preview first: it saves a backup of the current agent before changing anything.</p>
+      </Item>
+      <Item title="Browser extension" status={{state: 'off', detail: 'Optional'}}>
+        <p>Right-click selected text on any page → <b>Check with scamnasium</b> opens the Customer tab with the text checked in the browser.</p>
+        <code>chrome://extensions → Developer mode → Load unpacked → extension/</code>
       </Item>
     </div>
   );
