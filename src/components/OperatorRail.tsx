@@ -60,10 +60,24 @@ export function OperatorRail({secret, onSecret, busy, calls, status, onReport, o
     if (/\.eml$/i.test(file.name)) setChannel('email');
   }
 
+  const [batch, setBatch] = useState('');
+  /** Several files at once are filed one by one (max 10, the gateway rate-limits reports). */
+  async function reportFiles(files: File[]) {
+    const list = files.slice(0, 10);
+    let filed = 0;
+    for (const [n, file] of list.entries()) {
+      setBatch(`Filing ${n + 1} of ${list.length}…`);
+      if (file.size <= 500_000 && await onReport(await file.text(), /\.eml$/i.test(file.name) ? 'email' : 'auto')) filed++;
+    }
+    setBatch(`Filed ${filed} of ${files.length} file${files.length === 1 ? '' : 's'}${files.length > 10 ? ' (max 10 at a time)' : ''}.`);
+  }
+
   function drop(e: DragEvent) {
     e.preventDefault();
     setDragging(false);
-    void loadFile(e.dataTransfer.files[0]);
+    const files = [...e.dataTransfer.files];
+    if (files.length > 1 && !locked) void reportFiles(files);
+    else void loadFile(files[0]);
   }
 
   async function submit(e: FormEvent) {
@@ -89,7 +103,7 @@ export function OperatorRail({secret, onSecret, busy, calls, status, onReport, o
           onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}
           placeholder="Paste a suspicious text or email. You can also drop an .eml file or paste “Show original”." aria-label="Message to check" />
         <p className="hint">
-          {raw ? 'Raw email detected: headers, sender checks and HTML will be decoded.' : <>Or <label className="link file-pick">choose an .eml file<input type="file" accept=".eml,message/rfc822,text/plain" onChange={e => { void loadFile(e.target.files?.[0]); e.target.value = ''; }} /></label></>}
+          {batch || (raw ? 'Raw email detected: headers, sender checks and HTML will be decoded.' : <>Or <label className="link file-pick">choose an .eml file<input type="file" accept=".eml,message/rfc822,text/plain" onChange={e => { void loadFile(e.target.files?.[0]); e.target.value = ''; }} /></label> (drop several to file them all)</>)}
         </p>
         <div className="row">
           <select value={channel} onChange={e => setChannel(e.target.value as Channel)} aria-label="Channel">
