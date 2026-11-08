@@ -8,6 +8,7 @@ import { CustomerView } from './views/CustomerView';
 import { CollectorView } from './views/CollectorView';
 import { SetupView } from './views/SetupView';
 import { buildElements, type Selection } from './lib/graph';
+import { duration } from './lib/format';
 import { ApiError, postAction, postReport, useGatewayStatus, type Action, type ProviderState } from './lib/api';
 import './style.css';
 
@@ -105,6 +106,8 @@ export default function App() {
   };
 
   const liveCalls = calls.filter(c => c.status === 'in_progress' || c.status === 'ringing').length;
+  // Measured from real honeypot calls only (simulated scenarios never create call rows).
+  const wastedSecs = calls.reduce((sum, c) => sum + c.durationSecs, 0);
   const decoyShare = events.length ? Math.round((events.filter(e => e.kind === 'synthetic_decoy').length / events.length) * 100) : 0;
 
   return (
@@ -137,6 +140,7 @@ export default function App() {
                   <div><dt>Reports</dt><dd>{incidents.length}</dd></div>
                   <div><dt>Campaigns</dt><dd>{campaigns.length}</dd></div>
                   <div><dt>Honeypot calls</dt><dd>{calls.length}{liveCalls > 0 && <small className="live-count"> · {liveCalls} live</small>}</dd></div>
+                  <div><dt>Caller time wasted</dt><dd>{duration(wastedSecs)}</dd></div>
                   <div><dt>Decoy share</dt><dd>{decoyShare}%</dd></div>
                 </dl>
                 <NetworkGraph elements={elements} selection={selection} onSelect={setSelection} />

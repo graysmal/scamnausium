@@ -27,15 +27,33 @@ const honeypotNumber = (env.HONEYPOT_NUMBER ?? '').slice(0, 32);
 // Database connection (gateway is the module's operator identity)
 // ---------------------------------------------------------------------------
 let connected = false;
-const conn = DbConnection.builder()
-  .withUri(env.SPACETIMEDB_URI ?? 'ws://127.0.0.1:3000')
-  .withDatabaseName(env.SPACETIMEDB_DATABASE ?? 'scamnasium')
-  .withToken(serviceToken)
-  .onConnect(c => { c.subscriptionBuilder().onApplied(() => { connected = true; }).subscribeToAllTables(); })
-  .onDisconnect(() => { connected = false; })
-  .onConnectError(() => { connected = false; console.error('Database connection failed. Check the local server and service token.'); })
-  .build();
-const ingestor = createIngestor(conn);
+let reconnectDelay = 1000;
+let reconnectTimer: NodeJS.Timeout | undefined;
+function connect(): DbConnection {
+  return DbConnection.builder()
+    .withUri(env.SPACETIMEDB_URI ?? 'ws://127.0.0.1:3000')
+    .withDatabaseName(env.SPACETIMEDB_DATABASE ?? 'scamnasium')
+    .withToken(serviceToken)
+    .onConnect(c => {
+      c.subscriptionBuilder().onApplied(() => { connected = true; reconnectDelay = 1000; console.log('Database connected.'); }).subscribeToAllTables();
+    })
+    .onDisconnect(() => { connected = false; scheduleReconnect('disconnected'); })
+    .onConnectError(() => { connected = false; scheduleReconnect('connection failed (check the server and SPACETIMEDB_SERVICE_TOKEN)'); })
+    .build();
+}
+/** Reconnects with exponential backoff (1s → 30s) so a database restart doesn't require restarting the gateway. */
+function scheduleReconnect(reason: string) {
+  if (reconnectTimer) return;
+  console.error(`Database ${reason}; retrying in ${reconnectDelay / 1000}s.`);
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = undefined;
+    reconnectDelay = Math.min(reconnectDelay * 2, 30_000);
+    conn = connect();
+  }, reconnectDelay);
+}
+let conn = connect();
+// Delegate through getters so the ingestor always uses the current connection after a reconnect.
+const ingestor = createIngestor({get reducers() { return conn.reducers; }, get db() { return conn.db; }});
 const ingest = (r: ExternalReport) => connected ? ingestor.ingest(r) : Promise.reject(new Error('database disconnected'));
 const upsertCall = async (c: {id: string; providerStatus: string; startedAtSecs: number; durationSecs: number; title: string}) => {
   if (!connected) throw new Error('database disconnected');
