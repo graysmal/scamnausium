@@ -72,7 +72,8 @@ export const graphStyle: StylesheetJson = [
   {selector: 'node', style: {
     'font-family': 'Inter, system-ui, sans-serif', 'font-size': 11, color: GRAPH_COLORS.ink2,
     'text-valign': 'bottom', 'text-margin-y': 6, 'text-wrap': 'wrap', 'text-max-width': '150px',
-    'overlay-opacity': 0, 'transition-property': 'border-width, border-color, width, height', 'transition-duration': 150,
+    'overlay-opacity': 0, 'underlay-opacity': 0, 'underlay-padding': 4, 'underlay-color': GRAPH_COLORS.high,
+    'transition-property': 'border-width, border-color, width, height, underlay-opacity, underlay-padding', 'transition-duration': 150,
   }},
   {selector: 'node[kind = "campaign"]', style: {
     shape: 'ellipse', 'background-color': GRAPH_COLORS.surface, 'border-width': 1.5, 'border-color': GRAPH_COLORS.ink,
@@ -99,4 +100,7 @@ export const graphStyle: StylesheetJson = [
   {selector: 'node[kind = "incident"][live = 1]:selected', style: {'border-color': GRAPH_COLORS.live, 'border-width': 3.5}},
   {selector: 'node.hover', style: {label: 'data(label)', color: GRAPH_COLORS.ink}},
   {selector: '.faded', style: {opacity: 0.18}},
+  // Just-arrived report: a soft halo that fades out (class removed after a few seconds).
+  {selector: 'node.fresh', style: {'underlay-opacity': 0.22, 'underlay-padding': 14, 'transition-duration': 900, label: 'data(label)', color: GRAPH_COLORS.ink}},
+  {selector: 'node.fresh[risk = "pending"]', style: {'underlay-color': GRAPH_COLORS.live}},
 ];

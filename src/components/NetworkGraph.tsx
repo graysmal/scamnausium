@@ -45,6 +45,7 @@ export function NetworkGraph({elements, selection, onSelect}: Props) {
     if (!cy) return;
     const next = new Map(elements.map(e => [String(e.data.id), e]));
     let structural = false;
+    const arrived: string[] = [];
     cy.batch(() => {
       cy.elements().forEach(ele => {
         if (!next.has(ele.id())) { ele.remove(); structural = true; }
@@ -60,6 +61,7 @@ export function NetworkGraph({elements, selection, onSelect}: Props) {
           const anchor = otherId ? cy.getElementById(String(otherId)) : undefined;
           const base = anchor?.nonempty() ? anchor.position() : center;
           cy.add({...def, position: {x: base.x + (Math.random() - 0.5) * 60, y: base.y + (Math.random() - 0.5) * 60}});
+          if (hasFit.current && def.data.kind === 'incident') arrived.push(id);
         }
         structural = true;
       }
@@ -67,6 +69,12 @@ export function NetworkGraph({elements, selection, onSelect}: Props) {
         if (def.group === 'edges' && cy.getElementById(id).empty()) cy.add(def);
       }
     });
+    // Highlight reports that arrived live (not the initial load), then let the halo fade.
+    for (const id of arrived) {
+      const node = cy.getElementById(id);
+      node.addClass('fresh');
+      setTimeout(() => { if (!node.removed()) node.removeClass('fresh'); }, 4000);
+    }
     if (structural && cy.nodes().nonempty()) {
       // Tables arrive one subscription at a time; wait for the burst to settle, then lay out once.
       clearTimeout(layoutTimer.current);
