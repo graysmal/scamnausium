@@ -147,7 +147,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className="body">
+      <div className={`body view-${view}`}>
         <OperatorRail secret={secret} onSecret={setSecret} busy={busy} calls={calls} status={status}
           onReport={onReport} onAction={onAction} incidentIds={incidentIds}
           onOpenIncident={id => { setSelection({kind: 'incident', id}); setView('network'); }} />
