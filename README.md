@@ -2,22 +2,19 @@
 
 > **Latest work and how to run it: [docs/HANDOFF.md](docs/HANDOFF.md).**
 
-A working local prototype for collective scam defense: synthetic reports, explainable campaign links, customer guidance, and a controlled first-party decoy collector. Built from the official SpacetimeDB React/TypeScript starter.
+Collective scam defense: check any text or email, link reports into campaigns, and run an AI honeypot phone line that wastes scammers' time. Everything lives in one real-time SpacetimeDB state shared by every screen.
 
 ## What works
 
-- React command center, customer protection, mock collector, and integration setup views.
-- SpacetimeDB 2.14.1 authoritative tables, generated TypeScript bindings, live subscriptions.
-- Four deterministic scenarios: delivery, parcel variant, bank alert, simulated support call.
-- Validated reported → analyzed → linked → protected lifecycle. “Protected” means guidance shown, not a carrier block.
-- Bounded collector: 3 synthetic baseline records + 9 tagged synthetic decoys per run; no external target URLs or traffic.
-- Private publishing-identity authorization, local gateway operator secret, request limits and reducer idempotency.
+- **Check a message.** Paste a text or full email. An explainable rules analyzer flags brand impersonation, lookalike, shortened or IP links, sender and reply-to mismatches, gift-card, crypto, code and password requests, threats, urgency, and authority pretexts. Every flag is shown in plain language with low, medium or high confidence.
+- **Campaigns.** Reports are grouped by tactic and impersonated brand. Link domains and brands shared by two or more reports connect campaigns in an interactive Cytoscape graph (drag, select, zoom).
+- **Honeypot calls.** Photon number → ElevenLabs agent. The gateway polls ElevenLabs (read-only, no tunnel). A live call appears on the graph, and its summary is filed as a report when it ends. A signed post-call webhook is also supported. The stats show **Caller time wasted**.
+- **iMessage.** Optional polling of a Photon line. A forwarded message is filed and, if enabled for allowlisted contacts, answered with the verdict.
+- **Customer view.** One plain-language card: verdict, reasons, one next step.
+- **Mock collector.** A bounded first-party simulation of decoys diluting a scammer's list. No external traffic.
+- **Privacy.** Public tables hold sanitized summaries only: no transcripts, phone numbers, email usernames or provider IDs. Provenance is shown on every report.
 
-**Provider ingestion (code complete, real round trip NOT yet verified):**
-
-- **ElevenLabs post-call webhook** → `POST /webhooks/elevenlabs`. HMAC-verified (`ElevenLabs-Signature`), agent-filtered, replay-deduped, resumable. Stores only a sanitized `transcript_summary` (emails/phone numbers/long digit runs redacted); never the transcript or the conversation ID. Verified end to end with signed synthetic payloads (`npm run test:webhook`). A real call additionally needs a Photon voice number → ElevenLabs SIP, and a public HTTPS tunnel to the gateway.
-- **Photon iMessage** → opt-in polling worker (`ENABLE_PHOTON_POLLING=true`), only for `PHOTON_TEST_SENDER` → `PHOTON_AGENT_HANDLE` direct text. Reports become incidents; `ping` gets a connection-test reply. Replies require `ENABLE_LIVE_MESSAGING=true` and the sender in `ALLOWED_TEST_CONTACTS`. Unit-tested with a fake adapter; no request has been made to Photon.
-- Every incident shows its provenance (`SIMULATED`, `SIMULATED VOICE`, `PROVIDER CALL`, `PROVIDER iMESSAGE`). Provider status only changes after a verified event, never because a key is configured.
+Not yet verified against the real APIs: ElevenLabs polling (needs the API key) and Photon polling and replies.
 
 ## Run on your machine
 
@@ -40,7 +37,7 @@ spacetime start --listen-addr 127.0.0.1:3000
 Terminal 2 — publish using the local CLI identity, initialize private config, start gateway:
 
 ```bash
-spacetime publish scamnasium --server local --yes
+spacetime publish scamnasium --server local --yes   # add --delete-data once if you published an older schema
 npm run setup:local
 npm run gateway
 ```
