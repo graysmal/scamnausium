@@ -109,9 +109,26 @@ function IncidentDetail({incident, data, onSelect, onAction, canAct}: {incident:
   );
 }
 
+/** Signal labels name one report's domain; across a campaign, say it generically. */
+const playbookLabel = (label: string) => label
+  .replace(/\s*\([^)]*\)\s*$/, '')
+  .replace(/, but the link goes to .*$/, ', but links to another site')
+  .replace(/, but was sent from .*$/, ', but is sent from another domain');
+
 function CampaignDetail({campaign, data, onSelect, onAction, canAct}: {campaign: Campaigns} & Omit<Props, 'selection'>) {
   const members = data.incidents.filter(i => i.campaignId === campaign.id).sort((a, b) => toMs(b.createdAt) - toMs(a.createdAt));
   const channels = [...new Set(members.map(m => CHANNEL_LABEL[m.channel] ?? m.channel))].join(', ');
+  const memberIds = new Set(members.map(m => m.id));
+  const own = data.indicators.filter(i => memberIds.has(i.incidentId));
+  // The playbook: which warning signs recur across this campaign's reports, most common first.
+  const playbook = [...own.filter(i => i.kind === 'signal').reduce((map, i) => {
+    const entry = map.get(i.fingerprint) ?? {label: playbookLabel(i.displayValue), count: 0, weight: i.weight};
+    entry.count += 1;
+    return map.set(i.fingerprint, entry);
+  }, new Map<string, {label: string; count: number; weight: number}>()).values()]
+    .sort((a, b) => b.count - a.count || b.weight - a.weight).slice(0, 5);
+  const domains = [...new Set(own.filter(i => i.kind === 'domain').map(i => i.displayValue))];
+  const callSecs = data.calls.filter(c => memberIds.has(c.id)).reduce((sum, c) => sum + c.durationSecs, 0);
   return (
     <article className="detail">
       <p className="eyebrow">Campaign</p>
@@ -121,7 +138,22 @@ function CampaignDetail({campaign, data, onSelect, onAction, canAct}: {campaign:
         <dt>Channels</dt><dd>{channels || '—'}</dd>
         <dt>First seen</dt><dd>{timeAgo(campaign.firstSeen)}</dd>
         <dt>Last seen</dt><dd>{timeAgo(campaign.lastSeen)}</dd>
+        {callSecs > 0 && <><dt>Caller time wasted</dt><dd className="mono">{duration(callSecs)}</dd></>}
       </dl>
+      {playbook.length > 0 && (
+        <>
+          <h3>Playbook</h3>
+          <ul className="playbook">
+            {playbook.map(p => <li key={p.label}><span>{p.label}</span><span className="mono quiet">{p.count}/{members.length}</span></li>)}
+          </ul>
+        </>
+      )}
+      {domains.length > 0 && (
+        <>
+          <h3>Domains used</h3>
+          <div className="tags">{domains.map(d => <span key={d} className="tag mono">{d}</span>)}</div>
+        </>
+      )}
       <p className="quiet small">Grouped by tactic and impersonated brand. A shared pattern, not proof of a single sender.</p>
       <div className="actions"><button type="button" className="primary" disabled={!canAct} onClick={() => onAction({action: 'decoys', campaignId: campaign.id})}>Run decoy session</button></div>
       <h3>Reports</h3>
