@@ -68,12 +68,28 @@ export function decodeHeader(value: string): string {
 
 const ENTITIES: Record<string, string> = {amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', '#39': "'"};
 
+/** Removes comments and <style>/<script>/<head>/<title> blocks in one linear pass (lazy regexes are quadratic here). */
+function stripBlocks(html: string): string {
+  const lower = html.toLowerCase();
+  const open = /<!--|<(style|script|head|title)\b/g;
+  let out = '', i = 0;
+  for (let m = open.exec(lower); m; open.lastIndex = i, m = open.exec(lower)) {
+    out += html.slice(i, m.index) + ' ';
+    const comment = m[0] === '<!--';
+    const close = lower.indexOf(comment ? '-->' : `</${m[1]}`, m.index + m[0].length);
+    if (close < 0) return out;
+    const end = comment ? close + 3 : lower.indexOf('>', close) + 1;
+    i = end > 0 ? end : html.length;
+  }
+  return out + html.slice(i);
+}
+
 /** HTML → readable text. Link targets are kept next to their text so link checks still see them. */
 export function htmlToText(html: string): string {
-  return html
-    .replace(/<(style|script|head|title)[\s\S]*?<\/\1>/gi, ' ')
-    .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/<a\b[^>]*?href\s*=\s*["']?([^"'\s>]+)["']?[^>]*>([\s\S]*?)<\/a>/gi, (_, href: string, inner: string) => {
+  // Capped: the lazy tag patterns below are quadratic on adversarial input, and the stored summary is short anyway.
+  return stripBlocks(html.slice(0, 100_000))
+    // Bounded inner text keeps this linear when many <a> tags are left unclosed.
+    .replace(/<a\b[^>]{0,500}?href\s*=\s*["']?([^"'\s>]+)["']?[^>]{0,500}>([\s\S]{0,2000}?)<\/a>/gi, (_, href: string, inner: string) => {
       const label = inner.replace(/<[^>]+>/g, '').trim();
       return /^https?:/i.test(href) && !label.includes(href) ? `${label} (${href})` : label;
     })
