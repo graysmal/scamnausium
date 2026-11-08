@@ -1,5 +1,7 @@
 # AGENTS.md — scamnausium
 
+> **Continuing previous work? Start with [`slopdocs/plans/20261108-pickup.md`](slopdocs/plans/20261108-pickup.md)**: current state, how to run, deliberate design choices, open tasks, and rules from the user (no calls to the honeypot number, never `--apply` the agent script without asking). Work is on branch `overnight/v2`.
+
 > **Authoritative instructions for all coding agents working in this repository.**
 > Read this file first, then `docs/ARCHITECTURE.md`, `docs/INTEGRATIONS.md`, `docs/TASKS.md`, and `docs/DEMO.md` as relevant. `CLAUDE.md` and `.github/copilot-instructions.md` are pointers to this document, not separate specifications.
 
