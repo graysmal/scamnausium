@@ -1,78 +1,41 @@
-# Demo runbook and judging narrative
+# Demo runbook (about 2.5 minutes)
 
-> Goal: **2–3 minutes**, three synchronized views, one visible novel protection. Test the exact flow on the actual presentation machine.
+**One-liner:** Scam filters flag one message at a time. scamnasium links every report into shared protection, and its honeypot line costs scammers the one thing they can't get back: time.
 
-## One-liner
+## Before you present
+1. `spacetime start`, `npm run gateway`, `npm run dev`. Open http://localhost:5173 full screen (1920×1080).
+2. Paste `OPERATOR_DEMO_SECRET` into **Operator key** (top left).
+3. `npm run seed` for a populated starting graph, or **Reset demo data** for a clean start.
+4. Gateway env for real calls: `ENABLE_ELEVENLABS_POLLING=true`, `ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`, `HONEYPOT_NUMBER`. Check that the top-right **Calls** dot is filled.
+5. Keep one teammate's phone ready to call the honeypot number. Don't spam it: one call for the demo, one for rehearsal.
 
-**"Scam detectors flag individual messages. scamnausium turns each reported attempt into shared protection—and studies whether believable synthetic decoys can undermine the economics of scam data collection."**
+## Script
+**0:00 — The problem (Network view).** "Every scam text or call gets judged on its own. Scammers reuse the same playbook across thousands of people, and nobody connects the dots."
 
-## Demo controls to implement
+**0:20 — Check a message.** Click **Use sample** (PayPal email), then **Check**. The report appears on the graph and the inspector opens: high risk, and *why* in plain language (sender pretends to be PayPal but comes from `paypa1-billing…`, replies go elsewhere, sign-in pressure). No black box, every reason is shown.
 
-- `Reset synthetic demo` — clear/reseed only fictional scenarios and local simulation events.
-- `Inject delivery scam` — insert a fake delivery-fee SMS.
-- `Inject variant` — add a rewritten version with a different synthetic sender but the same campaign pattern.
-- `Launch controlled decoys` — run a bounded internal simulator; update collector events and decoy ratio from actual SpacetimeDB rows.
-- `Show customer outcome` — switch to a simple explanation and next-step view.
-- `Provider status` — distinguish `LIVE VERIFIED`, `SIMULATED`, `RECORDED LIVE TEST`, and `UNAVAILABLE`.
+**0:45 — It's a campaign, not a message.** Click **USPS fee text**, then **USPS variant**. Different wording and links, but both join the *USPS · Delivery fee* campaign, and the shared brand node connects them. Drag nodes around and click a campaign to see its reports.
 
-## Synthetic fixtures
+**1:05 — Live call (the honeypot).** A teammate calls the honeypot number and plays the scammer ("This is Amazon, I need the code we texted you"). A blue **Live call** node appears and the left rail counts the seconds. Our AI persona "Pat" stalls, mishears, and never finishes a number. When the caller hangs up, the call is summarized and filed into the matching campaign, and **Caller time wasted** goes up.
+  *Talking point:* the agent never says it's a scam and never gives out real data. Every minute on the phone with Pat is a minute not spent on a real victim.
 
-### Scenario A — Fake package redelivery
+**1:50 — What the customer sees.** **Customer** tab: one card with a clear verdict, what we noticed, and one next step. Confidence is low, medium or high, never a fake percentage. Mention that the same verdict is texted back when someone forwards a suspicious message to the iMessage line (if enabled).
 
-**Message:** "Delivery attempt failed. Confirm delivery details and a $1.25 redelivery fee at `https://parcel-check.example.com/confirm` within 2 hours."
+**2:10 — Poisoning the well (optional).** Select a campaign, click **Run decoy session**, open **Collector**: the simulated scammer list fills up with decoys. Say clearly that this runs on our own mock collector, never against real infrastructure.
 
-**Expected analysis:** Delivery-company impersonation; urgency; request for payment; off-brand link. Recommendation: open the courier's official app or independently entered address; don't pay through the provided link.
+**2:25 — Close.** "One report protects the next person. One call wastes a scammer's afternoon. All of it lives in one real-time SpacetimeDB state, synced across every screen."
 
-### Scenario B — Campaign variant
-
-**Message:** "Parcel pending: small handling charge required before release. Visit `https://parcel-check.example.com/pay` today."
-
-**Expected relationship:** Same synthetic hostname, same fee collection objective, same delivery impersonation. Don't rely on identical text matching.
-
-### Scenario C — Fictional phone scam
-
-**Team member role-play:** A mock caller attempts to convince a fictional recipient that their account needs urgent verification and requests a one-time password. No real credentials or persons are involved.
-
-**Expected action:** An inbound Photon call reaches the fictional voice agent (if verified); the call/session is summarized as an impersonation + OTP request, and the incident appears in the network. The agent should not provide real personal information or claim to be a real named person.
-
-## Script (approximately 150 seconds)
-
-**0:00–0:20 — Hook.** "Most tools stop at 'this looks suspicious.' Our idea is different: what if one encounter made the whole network safer, and scam data collection itself less reliable?"
-
-**0:20–0:45 — A message arrives.** Inject Scenario A; highlight risk evidence and clear next steps. Point out that the dashboard is using real SpacetimeDB state.
-
-**0:45–1:10 — Network protection.** Inject Scenario B; show campaign link and synchronized changes across two browser windows. State exactly which signals justified the correlation.
-
-**1:10–1:40 — Controlled decoy.** Trigger first-party mock collector; show internally consistent synthetic records entering and decoy-share metric updating. Say: "This is a controlled experiment, not traffic sent to actual scammers."
-
-**1:40–2:15 — Photon live interaction.** Have a teammate call your **verified** Photon voice-capable number (or show genuine recorded evidence if the live network is unreliable). If iMessage is working, show a brief incoming report and native reply. Be truthful about what actually happened.
-
-**2:15–2:30 — Customer outcome.** Show who was protected, evidence, the recommended action, and data-privacy explanation. End with the one-liner.
-
-## Visual staging
-
-- **Primary screen:** Operations command center with an incident timeline on the left, relationship graph in the center, selected incident / risk evidence on the right, and event counters along the top.
-- **Secondary tabs:** Customer view and a visually distinct `SIMULATED SCAMMER COLLECTOR` view.
-- **Do not:** Present unfiltered synthetic submission counts as a number of real scammers defeated; show a percent confidence without calibration; claim automatic blocking of carrier messages or actual external attack disruption.
-
-## Fallback table
-
-| Failure | Honest demo fallback |
+## If something breaks
+| Problem | What to do |
 |---|---|
-| Photon voice number/SIP unavailable | Show **SIMULATED VOICE** with a prerecorded fictional call; explicitly say the real SIP integration is incomplete |
-| SIP works but webhook delayed | Show call status in provider console and link a separately marked pre-recorded call event |
-| No iMessage-capable sender | Use synthetic inbox, label it; never represent Android SMS as iMessage |
-| LLM unavailable | Use deterministic incident rules and canned explanation fixtures, clearly identified |
-| Internet unavailable | Locally hosted app + SpacetimeDB + synthetic scenario engine; show no live provider badge |
-| Network graph breaks | Fall back to incident and campaign tables subscribed to the same database |
+| No live call appears | Check the **Calls** dot and `npm run gateway` logs. Use the **Amazon code call** scenario, which is clearly labeled *Simulated call*. |
+| Call ends but no report | The agent may have Analysis off. The call is still filed after 2 minutes with "No summary". Turn on Analysis in ElevenLabs. |
+| Database restarted | The gateway reconnects on its own within about 30 seconds. Reload the page. |
+| Graph looks messy | Click **Re-arrange**, then **Fit**. |
+| No internet | Everything except calls and iMessage runs locally: use the scenarios and pasted messages. |
 
-## Judging talking points
-
-- **T-Mobile creativity:** Builds on detection with a novel, controlled decoy research mechanism, proactive campaign correlation, clear intervention, and privacy-first design.
-- **SpacetimeDB primary value:** Real-time multi-view threat-network state and decoy lifecycle are the application, not an incidental chat feature.
-- **Photon primary value:** Native message/call experiences connect the protective backend to real communications; voice routing uses Photon SIP and a voice model provider.
-- **Responsible impact claim:** The hackathon simulates data-contamination mechanics; proof of effectiveness against real scammers requires future authorized research.
-
-## Closing / roadmap (mention only if asked)
-
-Carrier-side opt-in integrations, more robust privacy-preserving cross-customer correlation, controlled honeypot partners, and rigorous decoy-detection testing are future work—not claimed features in this 12-hour prototype.
+## Honesty rules for Q&A
+- Scenario data is simulated and labeled. Honeypot calls are real calls from our own phones.
+- The analyzer flags warning signs, not proof about a sender.
+- Decoy share is measured on our simulated collector only. Real-world impact would need authorized research.
+- We store only cleaned summaries: no transcripts, phone numbers or email usernames.

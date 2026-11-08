@@ -22,7 +22,7 @@ export function CollectorView({events, sessions, campaigns}: {events: readonly D
           <thead><tr><th>Record</th><th>Campaign</th><th>Type</th><th>Added</th></tr></thead>
           <tbody>{recent.map(e => (
             <tr key={e.id}>
-              <td className="mono">{e.id.slice(-10)}</td>
+              <td className="mono">{e.sessionId.slice(0, 6)} · #{String(Number(e.id.split('-').pop()) + 1).padStart(2, '0')}</td>
               <td>{campaignOf(e.sessionId)}</td>
               <td>{e.kind === 'synthetic_decoy' ? <span className="tag decoy">Decoy</span> : <span className="tag">Baseline</span>}</td>
               <td className="quiet">{timeAgo(e.timestamp)}</td>
