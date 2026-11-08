@@ -14,4 +14,5 @@ export default {
   eventId: __t.string(),
   source: __t.string(),
   summary: __t.string(),
+  channel: __t.string(),
 };

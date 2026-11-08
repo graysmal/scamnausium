@@ -15,10 +15,11 @@ const now = 1_800_000_000;
 test('sanitizeSummary redacts contact details and caps length', () => {
   const out = sanitizeSummary('Call me at +1 (415) 555-0100 or jane.doe@example.com, card 4111111111111111\u0007 ok');
   assert.ok(!out.includes('555'), out);
-  assert.ok(!out.includes('@'), out);
+  assert.ok(!out.includes('jane.doe'), out);
+  assert.ok(out.includes('•••@example.com'), out);
   assert.ok(!out.includes('4111'), out);
   assert.ok(!/[\u0000-\u001f]/.test(out));
-  assert.equal(sanitizeSummary('x'.repeat(1000)).length, 400);
+  assert.equal(sanitizeSummary('x'.repeat(1000)).length, 600);
 });
 
 test('analysis no longer labels benign text as a bank lure', () => {
@@ -26,7 +27,7 @@ test('analysis no longer labels benign text as a bank lure', () => {
   assert.equal(a.key, 'unclassified');
   assert.equal(a.confidence, 'low');
   assert.equal(isLinkable(a.key), false);
-  assert.equal(analyze('Caller said he was from support and urgently asked for my one-time code').key, 'support-otp');
+  assert.equal(analyze('Caller said he was from support and urgently asked for my one-time code').key, 'code_theft:unbranded');
 });
 
 test('state machine allows guidance on an analyzed-but-unlinked incident', () => {
@@ -66,7 +67,7 @@ test('parsePostCall uses only the sanitized summary and a hashed id', () => {
   assert.ok(!r.eventId.includes('conv_123'));
   assert.ok(!r.summary.includes('SECRET-TRANSCRIPT-LINE'));
   assert.ok(!r.summary.includes('555'));
-  assert.equal(analyze(r.summary).key, 'support-otp');
+  assert.equal(analyze(r.summary).key, 'code_theft:unbranded');
 });
 
 test('parsePostCall ignores other agents, other event types and empty summaries', () => {
@@ -91,7 +92,7 @@ function fakeConn(failAnalyzeOnce = false) {
   };
   return { conn, rows, calls };
 }
-const otpReport = { eventId: externalEventId('el', 'c1'), source: 'elevenlabs_call' as const, summary: 'Caller urgently requested a one-time password' };
+const otpReport = { eventId: externalEventId('el', 'c1'), source: 'elevenlabs_call' as const, channel: 'call' as const, summary: 'Caller urgently requested a one-time password' };
 
 test('ingestor creates, links, and drops replays', async () => {
   const { conn, calls } = fakeConn();
@@ -162,4 +163,24 @@ test('poller records errors without throwing and retries the message next poll',
   assert.equal(poller.status.lastError, 'db down');
   assert.equal(await poller.pollOnce(), 1);
   assert.equal(poller.status.lastError, undefined);
+});
+
+// ---------- ElevenLabs call poller ----------
+import { createCallPoller, type ConversationSummary } from '../services/gateway/src/workers/elevenLabsPoller';
+test('call poller: live call upserted once per change, summarized call ingested once', async () => {
+  const live: ConversationSummary = { conversationId: 'conv-1', status: 'in-progress', startTimeUnixSecs: now, callDurationSecs: 0, transcriptSummary: '', title: '' };
+  const done: ConversationSummary = { ...live, status: 'done', callDurationSecs: 95, title: 'Fake Amazon refund', transcriptSummary: 'Caller urgently asked for the one-time code. Callback 415 555 0100.' };
+  const pages = [[live], [live], [done], [done]];
+  const upserts: string[] = [], reports: string[] = [];
+  const poller = createCallPoller({ list: async () => pages.shift() ?? [] }, {
+    upsertCall: async c => { upserts.push(c.providerStatus); },
+    ingest: async r => { reports.push(r.summary); assert.equal(r.channel, 'call'); return 'created'; },
+  });
+  await poller.pollOnce(); assert.equal(poller.status.activeCalls, 1);
+  await poller.pollOnce(); await poller.pollOnce(); await poller.pollOnce();
+  assert.deepEqual(upserts, ['in-progress', 'done']);
+  assert.equal(reports.length, 1);
+  assert.match(reports[0], /^Fake Amazon refund\. /);
+  assert.ok(!reports[0].includes('555'));
+  assert.equal(poller.status.activeCalls, 0);
 });

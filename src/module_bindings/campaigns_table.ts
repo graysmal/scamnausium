@@ -13,6 +13,8 @@ import {
 export default __t.row({
   id: __t.string().primaryKey(),
   label: __t.string(),
+  impersonatedBrand: __t.string().name("impersonated_brand"),
+  tactic: __t.string(),
   incidentCount: __t.u32().name("incident_count"),
   firstSeen: __t.timestamp().name("first_seen"),
   lastSeen: __t.timestamp().name("last_seen"),

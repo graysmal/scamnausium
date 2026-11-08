@@ -1,9 +1,11 @@
 import 'dotenv/config';
 import assert from 'node:assert/strict';
 const base='http://127.0.0.1:4000';
-const status=await fetch(base+'/api/status').then(r=>r.json());assert.equal(status.database,'Connected');assert.notEqual(status.photon,'Live');
+const status=await fetch(base+'/api/status').then(r=>r.json());assert.equal(status.database,'Connected');assert.notEqual(status.messaging.state,'verified');
 const denied=await fetch(base+'/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'inject',scenarioId:'delivery'})});assert.equal(denied.status,401);
 const headers={'Content-Type':'application/json',Authorization:`Bearer ${process.env.OPERATOR_DEMO_SECRET}`};
 const ok=await fetch(base+'/api/action',{method:'POST',headers,body:JSON.stringify({action:'inject',scenarioId:'bank'})});assert.equal(ok.status,200);
-const rate=await fetch(base+'/api/action',{method:'POST',headers,body:JSON.stringify({action:'inject',scenarioId:'bank'})});assert.equal(rate.status,429);
-console.log('PASS: gateway status, unauthorized request, authenticated scenario injection, rate limit.');
+const running=fetch(base+'/api/action',{method:'POST',headers,body:JSON.stringify({action:'decoys',campaignId:'account_takeover:chase'})});
+await new Promise(r=>setTimeout(r,300));
+const overlap=await fetch(base+'/api/action',{method:'POST',headers,body:JSON.stringify({action:'inject',scenarioId:'bank'})});assert.equal(overlap.status,429);assert.equal((await running).status,200);
+console.log('PASS: gateway status, unauthorized request, authenticated scenario injection, overlapping-action rejection.');

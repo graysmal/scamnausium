@@ -14,6 +14,7 @@ import ReportExternalIncidentReducer from "../report_external_incident_reducer";
 import ReportIncidentReducer from "../report_incident_reducer";
 import ResetDemoReducer from "../reset_demo_reducer";
 import StartDecoySessionReducer from "../start_decoy_session_reducer";
+import UpsertCallReducer from "../upsert_call_reducer";
 
 export type AnalyzeIncidentParams = __Infer<typeof AnalyzeIncidentReducer>;
 export type LinkIncidentParams = __Infer<typeof LinkIncidentReducer>;
@@ -23,4 +24,5 @@ export type ReportExternalIncidentParams = __Infer<typeof ReportExternalIncident
 export type ReportIncidentParams = __Infer<typeof ReportIncidentReducer>;
 export type ResetDemoParams = __Infer<typeof ResetDemoReducer>;
 export type StartDecoySessionParams = __Infer<typeof StartDecoySessionReducer>;
+export type UpsertCallParams = __Infer<typeof UpsertCallReducer>;
 

@@ -13,6 +13,8 @@ import {
 export default __t.row({
   id: __t.string().primaryKey(),
   incidentId: __t.string().name("incident_id"),
+  kind: __t.string(),
   displayValue: __t.string().name("display_value"),
-  confidenceLabel: __t.string().name("confidence_label"),
+  fingerprint: __t.string(),
+  weight: __t.u32(),
 });

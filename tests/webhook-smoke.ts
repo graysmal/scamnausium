@@ -49,7 +49,7 @@ try {
   assert.equal(row.sourceKind, 'elevenlabs_call');
   assert.equal(row.channel, 'call');
   assert.equal(row.status, 'linked');
-  assert.equal(row.campaignId, 'support-otp');
+  assert.equal(row.campaignId, 'code_theft:unbranded');
   assert.ok(!row.summary.includes('RAW-TRANSCRIPT'), 'raw transcript must never be stored');
   assert.ok(!row.summary.includes('555'), 'phone numbers must be redacted');
   assert.ok(!row.id.includes(conversationId), 'provider ids must not be stored raw');
@@ -58,12 +58,12 @@ try {
   assert.equal(replay.status, 200);
   assert.equal((await replay.json()).outcome, 'duplicate');
   assert.equal(conn.db.incidents.count(), 1n);
-  assert.equal(conn.db.campaigns.id.find('support-otp')?.incidentCount, 1, 'replay must not double count');
+  assert.equal(conn.db.campaigns.id.find('code_theft:unbranded')?.incidentCount, 1, 'replay must not double count');
 
   const other = JSON.stringify({ ...JSON.parse(body), data: { ...JSON.parse(body).data, agent_id: 'someone-else' } });
   assert.equal((await (await post(other, sign(other))).json()).ignored !== undefined, true, 'other agents are ignored');
 
   const status = await fetch(`${base}/api/status`).then(r => r.json());
-  assert.match(status.voice, /^Verified call event/);
+  assert.equal(status.voice.state, 'verified');
   console.log('PASS: signature rejection (missing/wrong/tampered), verified call -> linked incident, transcript+phone redaction, hashed id, replay dedupe, agent filter, status upgrade.');
 } finally { conn.disconnect(); }

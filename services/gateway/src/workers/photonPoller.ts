@@ -33,9 +33,9 @@ export function createPhotonPoller(adapter: PollerAdapter, ingest: (r: ExternalR
       if (adapter.liveRepliesEnabled()) await adapter.replyToPing(m);
       return;
     }
-    const summary = sanitizeSummary(`iMessage report: ${text}`);
-    if (summary === 'iMessage report:') return;
-    const outcome = await ingest({ eventId: externalEventId('ph', m.id), source: 'photon_imessage', summary });
+    const summary = sanitizeSummary(text);
+    if (!summary) return;
+    const outcome = await ingest({ eventId: externalEventId('ph', m.id), source: 'photon_imessage', channel: 'imessage', summary });
     if (outcome === 'created' && adapter.liveRepliesEnabled()) await adapter.replyAck(m);
   }
 

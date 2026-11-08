@@ -13,8 +13,8 @@ try{
  await until(()=>a.db.incidents.count()===1n&&b.db.incidents.count()===1n);
  await assert.rejects(owner.reducers.protectIncident({incidentId:'smoke-a'}));
  for(const [eventId,scenarioId] of [['smoke-a','delivery'],['smoke-b','variant']]){await owner.reducers.reportIncident({eventId,scenarioId});await owner.reducers.analyzeIncident({incidentId:eventId});await owner.reducers.linkIncident({incidentId:eventId});}
- await until(()=>b.db.campaigns.id.find('parcel-fee')?.incidentCount===2);
- await owner.reducers.startDecoySession({sessionId:'smoke-session',campaignId:'parcel-fee'});
+ await until(()=>b.db.campaigns.id.find('delivery_fee:usps')?.incidentCount===2);
+ await owner.reducers.startDecoySession({sessionId:'smoke-session',campaignId:'delivery_fee:usps'});
  for(let sequence=0;sequence<12;sequence++)await owner.reducers.recordDecoyEvent({sessionId:'smoke-session',sequence});
  await owner.reducers.recordDecoyEvent({sessionId:'smoke-session',sequence:0});
  await assert.rejects(owner.reducers.recordDecoyEvent({sessionId:'smoke-session',sequence:12}));

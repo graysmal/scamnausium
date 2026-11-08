@@ -42,10 +42,12 @@ import ReportExternalIncidentReducer from "./report_external_incident_reducer";
 import ReportIncidentReducer from "./report_incident_reducer";
 import ResetDemoReducer from "./reset_demo_reducer";
 import StartDecoySessionReducer from "./start_decoy_session_reducer";
+import UpsertCallReducer from "./upsert_call_reducer";
 
 // Import all procedure arg schemas
 
 // Import all table schema definitions
+import CallsRow from "./calls_table";
 import CampaignsRow from "./campaigns_table";
 import DecoyEventsRow from "./decoy_events_table";
 import DecoySessionsRow from "./decoy_sessions_table";
@@ -57,6 +59,17 @@ import InterventionsRow from "./interventions_table";
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema({
+  calls: __table({
+    name: 'calls',
+    indexes: [
+      { accessor: 'id', name: 'calls_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'calls_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, CallsRow),
   campaigns: __table({
     name: 'campaigns',
     indexes: [
@@ -110,6 +123,9 @@ const tablesSchema = __schema({
   indicators: __table({
     name: 'indicators',
     indexes: [
+      { accessor: 'fingerprint', name: 'indicators_fingerprint_idx_btree', algorithm: 'btree', columns: [
+        'fingerprint',
+      ] },
       { accessor: 'id', name: 'indicators_id_idx_btree', algorithm: 'btree', columns: [
         'id',
       ] },
@@ -147,6 +163,7 @@ const reducersSchema = __reducers(
   __reducerSchema("report_incident", ReportIncidentReducer),
   __reducerSchema("reset_demo", ResetDemoReducer),
   __reducerSchema("start_decoy_session", StartDecoySessionReducer),
+  __reducerSchema("upsert_call", UpsertCallReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

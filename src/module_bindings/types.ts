@@ -10,9 +10,21 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+export const Calls = __t.object("Calls", {
+  id: __t.string(),
+  status: __t.string(),
+  startedAt: __t.timestamp(),
+  durationSecs: __t.u32(),
+  title: __t.string(),
+  updatedAt: __t.timestamp(),
+});
+export type Calls = __Infer<typeof Calls>;
+
 export const Campaigns = __t.object("Campaigns", {
   id: __t.string(),
   label: __t.string(),
+  impersonatedBrand: __t.string(),
+  tactic: __t.string(),
   incidentCount: __t.u32(),
   firstSeen: __t.timestamp(),
   lastSeen: __t.timestamp(),
@@ -42,7 +54,9 @@ export const Incidents = __t.object("Incidents", {
   id: __t.string(),
   scenarioId: __t.string(),
   channel: __t.string(),
+  headline: __t.string(),
   summary: __t.string(),
+  senderDomain: __t.string(),
   riskLevel: __t.string(),
   confidenceLabel: __t.string(),
   status: __t.string(),
@@ -55,8 +69,10 @@ export type Incidents = __Infer<typeof Incidents>;
 export const Indicators = __t.object("Indicators", {
   id: __t.string(),
   incidentId: __t.string(),
+  kind: __t.string(),
   displayValue: __t.string(),
-  confidenceLabel: __t.string(),
+  fingerprint: __t.string(),
+  weight: __t.u32(),
 });
 export type Indicators = __Infer<typeof Indicators>;
 

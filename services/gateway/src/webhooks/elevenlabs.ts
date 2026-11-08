@@ -27,16 +27,23 @@ export function verifyElevenLabsSignature(rawBody: string, header: string | unde
   return { ok: true };
 }
 
+export interface CallMeta { startedAtSecs: number; durationSecs: number; title: string }
 export type ParsedCall =
-  | { kind: 'incident'; eventId: string; summary: string }
+  | { kind: 'incident'; eventId: string; summary: string; call: CallMeta }
   | { kind: 'ignored'; reason: string };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
+/** Incident text for a finished call: the title first so it becomes the headline. */
+export function callReportText(title: string, summary: string): string {
+  const head = title.trim() ? title.trim().replace(/[.!?]*$/, '.') : 'Honeypot call.';
+  return sanitizeSummary(`${head} ${summary.trim()}`);
+}
+
 /** Opaque, stable incident id: provider ids are never stored in public tables. */
-export function externalEventId(prefix: 'el' | 'ph', providerId: string): string {
+export function externalEventId(prefix: 'el' | 'ph' | 'rp', providerId: string): string {
   return `${prefix}-${createHash('sha256').update(providerId).digest('hex').slice(0, 32)}`;
 }
 
@@ -54,7 +61,12 @@ export function parsePostCall(payload: unknown, expectedAgentId: string | undefi
   if (typeof conversationId !== 'string' || !conversationId || conversationId.length > 200) return { kind: 'ignored', reason: 'missing conversation_id' };
   const analysis = isRecord(data.analysis) ? data.analysis : undefined;
   const rawSummary = typeof analysis?.transcript_summary === 'string' ? analysis.transcript_summary : '';
-  const summary = sanitizeSummary(rawSummary ? `Voice decoy call summary: ${rawSummary}` : '');
-  if (!summary) return { kind: 'ignored', reason: 'no transcript_summary in analysis' };
-  return { kind: 'incident', eventId: externalEventId('el', conversationId), summary };
+  if (!rawSummary.trim()) return { kind: 'ignored', reason: 'no transcript_summary in analysis' };
+  const title = typeof analysis?.call_summary_title === 'string' ? analysis.call_summary_title : '';
+  const metadata = isRecord(data.metadata) ? data.metadata : {};
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+  return {
+    kind: 'incident', eventId: externalEventId('el', conversationId), summary: callReportText(title, rawSummary),
+    call: { startedAtSecs: num(metadata.start_time_unix_secs) || Math.floor(Date.now() / 1000), durationSecs: Math.round(num(metadata.call_duration_secs)), title: sanitizeSummary(title, 120) },
+  };
 }

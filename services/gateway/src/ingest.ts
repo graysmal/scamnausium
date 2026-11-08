@@ -2,7 +2,7 @@ import { analyze, isLinkable, type ExternalSource } from '../../../spacetimedb/s
 import type { DbConnection } from '../../../src/module_bindings/index';
 
 export type IngestOutcome = 'created' | 'resumed' | 'duplicate';
-export interface ExternalReport { eventId: string; source: ExternalSource; summary: string }
+export interface ExternalReport { eventId: string; source: ExternalSource; summary: string; channel: 'sms' | 'email' | 'call' | 'imessage' }
 
 /** Minimal surface of the generated connection used here; lets tests pass a fake. */
 export interface IngestConnection {
