@@ -14,7 +14,17 @@ test('analyzer corpus: common scam types get the right tactic and risk', () => {
     ['Guaranteed 300% returns on bitcoin in 2 weeks, risk-free.', 'investment', 'high'],
     ['Your Apple ID has been locked. Verify now at https://appIe-support.example.com', 'account_takeover', 'high'],
     ['Hi, is this Linda? We met at the conference last week.', 'relationship_opener', 'low'],
+    ['Zelle: We noticed a payment of $500 to John. If you did not authorize this, call our fraud team at 888-555-0100.', 'fake_fraud_alert', 'high'],
+    ['Hi Mom, I dropped my phone in the toilet. This is my new number. Can you text me on WhatsApp?', 'family_emergency', 'medium'],
+    ['Your Microsoft account will be deleted today. Call support at 1-800-555-0199 immediately.', 'tech_support', 'medium'],
+    ['Hey! I made $12,000 last month trading crypto with my mentor, want me to introduce you?', 'investment', 'high'],
+    ['Medicare: you qualify for a free back brace. Reply with your Medicare number to claim.', 'prize_lure', 'high'],
+    ['Hello, this is the Geek Squad. Your annual subscription of $399.99 renews today. To cancel call 888-555-0123.', 'fake_bill', 'medium'],
+    ['We are hiring! Earn $300/day liking YouTube videos. Contact our recruiter on Telegram.', 'job_scam', 'medium'],
+    ['Scan the QR code in the attached letter to avoid suspension of your vehicle registration.', 'account_takeover', 'medium'],
     ['Your Uber driver is arriving now.', 'unclassified', 'low'],
+    ['Chase: Your statement is ready. Log in to the Chase app to view it.', 'unclassified', 'low'],
+    ['Your verification code is 482913. Do not share it with anyone.', 'unclassified', 'low'],
     ['Reminder: dentist appointment tomorrow at 3pm. Reply C to confirm.', 'unclassified', 'low'],
   ];
   for (const [text, tactic, minRisk] of cases) {

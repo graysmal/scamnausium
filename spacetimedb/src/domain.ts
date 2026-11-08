@@ -101,7 +101,9 @@ const BRANDS: Brand[] = [
   {key: 'bofa', name: 'Bank of America', pattern: /bank of america|\bbofa\b/i, domains: ['bankofamerica.com']},
   {key: 'wells', name: 'Wells Fargo', pattern: /wells ?fargo/i, domains: ['wellsfargo.com']},
   {key: 'irs', name: 'IRS', pattern: /\birs\b|internal revenue/i, domains: ['irs.gov']},
-  {key: 'ssa', name: 'Social Security', pattern: /social security administration|\bssa\b/i, domains: ['ssa.gov']},
+  {key: 'ssa', name: 'Social Security', pattern: /social security (administration|number|office)|\bssa\b/i, domains: ['ssa.gov']},
+  {key: 'medicare', name: 'Medicare', pattern: /\bmedicare\b/i, domains: ['medicare.gov']},
+  {key: 'zelle', name: 'Zelle', pattern: /\bzelle\b/i, domains: ['zellepay.com']},
   {key: 'tmobile', name: 'T-Mobile', pattern: /t-?mobile/i, domains: ['t-mobile.com']},
   {key: 'verizon', name: 'Verizon', pattern: /verizon/i, domains: ['verizon.com']},
   {key: 'att', name: 'AT&T', pattern: /\bat&t\b|\batt\b/i, domains: ['att.com']},
@@ -132,27 +134,33 @@ export function extractHosts(text: string): string[] {
 export type SignalId =
   | 'urgency' | 'threat' | 'payment' | 'untraceable_payment' | 'credentials' | 'one_time_code'
   | 'prize' | 'remote_access' | 'callback' | 'brand_link_mismatch' | 'brand_sender_mismatch'
-  | 'reply_to_mismatch' | 'brand_sensitive_request' | 'compromise_scare' | 'authority_pretext' | 'job_offer' | 'family_emergency' | 'too_good' | 'wrong_number' | 'shortened_link' | 'ip_link' | 'punycode_link' | 'risky_tld' | 'insecure_link' | 'lookalike_domain' | 'auth_failed';
+  | 'reply_to_mismatch' | 'brand_sensitive_request' | 'compromise_scare' | 'authority_pretext' | 'job_offer' | 'family_emergency' | 'too_good' | 'wrong_number' | 'shortened_link' | 'ip_link' | 'punycode_link' | 'risky_tld' | 'insecure_link' | 'lookalike_domain' | 'auth_failed'
+  | 'transaction_alert' | 'new_number' | 'qr_code' | 'surprise_renewal' | 'identity_request';
 
 export interface Signal { id: SignalId; label: string; weight: number }
 
 interface Rule { id: SignalId; weight: number; label: string; test: RegExp }
 const TEXT_RULES: Rule[] = [
   {id: 'urgency', weight: 1, label: 'Pressure to act quickly', test: /\b(urgent(ly)?|immediately|right away|asap|tonight|within \d+ ?(hours?|hrs?|minutes?|mins?)|today only|final notice|last chance|expires? (today|soon)|before release)\b/i},
-  {id: 'threat', weight: 2, label: 'Threat of suspension, penalty or arrest', test: /\b(late fee|suspend(ed)?|locked|limited|restricted|deactivat\w+|closed|legal action|arrest|warrant|lawsuit|penalt(y|ies)|frozen)\b/i},
+  {id: 'threat', weight: 2, label: 'Threat of suspension, penalty or arrest', test: /\b(late fee|suspend(ed)?|suspension|locked|limited|restricted|deactivat\w+|closed|deleted|terminated|disconnected|legal action|arrest|warrant|lawsuit|penalt(y|ies)|frozen)\b/i},
   {id: 'compromise_scare', weight: 2, label: 'Claims your device or account is compromised', test: /\b(virus|infected|malware|hacked|compromised|fraudulent (order|charge|purchase|activity)|unusual activity)\b/i},
   {id: 'payment', weight: 1, label: 'Asks for a fee or payment', test: /\b(fee|charge|pay(ment)?|invoice|overdue|outstanding balance|refund)\b/i},
   {id: 'untraceable_payment', weight: 3, label: 'Asks for gift cards, crypto or wire transfer', test: /\b(gift ?cards?|itunes card|google play card|bitcoin|btc|crypto(currency)?|usdt|wire transfer|western union|moneygram|zelle|cash ?app)\b/i},
-  {id: 'credentials', weight: 2, label: 'Asks you to sign in or confirm identity', test: /\b(password|log ?in|sign ?in|verify (your )?(account|identity)|confirm (your )?(account|details|identity)|social security number|\bssn\b|account number|routing number|\bpin\b)\b/i},
+  {id: 'credentials', weight: 2, label: 'Asks you to sign in or confirm identity', test: /\b(password|log ?in|sign ?in|verify (your )?(account|identity)|confirm (your )?(account|details|identity)|\bpin\b)\b/i},
+  {id: 'identity_request', weight: 3, label: 'Asks for an ID or account number', test: /\b(reply|send|text|provide|confirm|give|verify|enter)\b[^.\n]{0,30}\b(social security number|ssn|medicare (number|id)|account number|routing number|date of birth|card number)\b/i},
   {id: 'one_time_code', weight: 3, label: 'Asks for a one-time or verification code', test: /\b(one[- ]time (pass)?code|one[- ]time password|verification code|security code|\botp\b|2fa code|code (we|i) (just )?sent)\b/i},
-  {id: 'prize', weight: 2, label: 'Unexpected prize, refund or reward', test: /\b(you('ve| have)? won|winner|prize|lottery|sweepstakes|claim your (reward|gift|refund)|free gift)\b/i},
+  {id: 'prize', weight: 2, label: 'Unexpected prize, refund or reward', test: /\b(you('ve| have)? won|winner|prize|lottery|sweepstakes|claim your (reward|gift|refund)|free gift|you qualify for (a )?free)\b/i},
   {id: 'remote_access', weight: 3, label: 'Asks to install software or allow remote access', test: /\b(anydesk|teamviewer|remote access|install (this|the) app|screen ?share)\b/i},
   {id: 'authority_pretext', weight: 2, label: 'Asks for secrecy or an unusual favor', test: /\b(i'?m (stuck )?in a meeting|can'?t talk (right )?now|keep this (between us|quiet)|(please )?don'?t tell (anyone|mom|dad|your (parents|family|bank))|it'?s (your|the) (boss|ceo|manager)|from (accounting|payroll|hr)\b)/i},
-  {id: 'job_offer', weight: 3, label: 'Unsolicited job offer with easy money', test: /\b(remote (job|position|role|work)|work from home|no experience (needed|required)|\$\d+ ?(\/|per) ?(day|hour|hr)|hiring now|selected for (a|the|this) (job|position|role))\b/i},
+  {id: 'job_offer', weight: 3, label: 'Unsolicited job offer with easy money', test: /\b(remote (job|position|role|work)|work from home|no experience (needed|required)|hiring now|we are hiring|selected for (a|the|this) (job|position|role)|(liking|rating|reviewing) (videos|products|apps|posts)|recruiter on (telegram|whatsapp))\b|(earn )?\$\d[\d,]* ?(\/|per|a) ?(day|hour|hr)\b/i},
   {id: 'family_emergency', weight: 3, label: 'Urgent family emergency asking for money', test: /\b(grandma|grandpa|mom|dad|it'?s me)\b[\s\S]{0,80}\b(arrested|jail|bail|hospital|accident|lawyer)\b/i},
-  {id: 'too_good', weight: 2, label: 'Promises returns that are too good to be true', test: /\b(guaranteed (returns?|profits?|income)|risk[- ]free|double your (money|investment)|\d{2,}% (returns?|profit))\b/i},
+  {id: 'too_good', weight: 2, label: 'Promises returns that are too good to be true', test: /\b(guaranteed (returns?|profits?|income)|risk[- ]free|double your (money|investment)|\d{2,}% (returns?|profit)|(trading|investment|crypto) (mentor|coach|signals?)|my (mentor|coach)\b)|made \$[\d,]+[^.\n]{0,40}\b(trading|crypto|investing|forex)\b/i},
   {id: 'wrong_number', weight: 2, label: '"Wrong number" opener often used to start romance or crypto scams', test: /\b(is this \w+\?|wrong number|we met at (the|a)\b)/i},
-  {id: 'callback', weight: 1, label: 'Pushes you to call a number in the message', test: /\b(call (us|now|back|this number)|contact us at|dial)\b[^.\n]{0,40}(\[number\]|\d{3})/i},
+  {id: 'callback', weight: 1, label: 'Pushes you to call a number in the message', test: /\bpress 1\b|\b(call|contact|dial)\b[^.\n]{0,40}(\[number\]|\d{3}[\s.-]?\d{3,4})/i},
+  {id: 'transaction_alert', weight: 2, label: 'Alert about a charge you may not recognize', test: /\b(did you (attempt|authori[sz]e|make|approve)|unauthori[sz]ed (charge|purchase|payment|transaction)|(noticed|detected) (a|an) (\$[\d,.]+ )?(purchase|payment|charge|transaction)|if (this was not you|you did not (authori[sz]e|make|request) this))\b/i},
+  {id: 'new_number', weight: 3, label: 'Claims to be someone you know on a new number', test: /\b(this is my new number|my new number|lost my phone|dropped my phone|broke my phone|(text|message) me on whatsapp)\b/i},
+  {id: 'qr_code', weight: 2, label: 'Asks you to scan a QR code, which can hide a phishing link', test: /\bscan (the |this |our )?(attached )?qr ?code\b/i},
+  {id: 'surprise_renewal', weight: 2, label: 'Surprise renewal or charge for something you may not have bought', test: /\b(subscription|membership|plan|invoice)\b[^.\n]{0,40}\b(renews?|renewed|auto-?renew\w*|will be charged|has been charged)\b|\bto cancel,? (please )?call\b/i},
 ];
 
 const TACTICS = {
@@ -164,7 +172,8 @@ const TACTICS = {
   tech_support: {label: 'Fake tech support', advice: 'Do not install anything or allow remote access. Close the session and contact the company through its official site.'},
   fake_bill: {label: 'Fake bill or fee', advice: 'Do not pay through the link. Sign in to the official website or app yourself to check whether you owe anything.'},
   job_scam: {label: 'Job offer scam', advice: 'Real employers do not recruit by surprise text or ask you to pay or move money. Do not reply; look up the company yourself.'},
-  family_emergency: {label: 'Family emergency scam', advice: 'Stop replying and call your family member directly on a number you already have. Never send bail or hospital money on request.'},
+  family_emergency: {label: 'Family impersonation', advice: 'Stop replying and call your family member directly on a number you already have. Never send money on request from a new number.'},
+  fake_fraud_alert: {label: 'Fake fraud alert', advice: 'Do not reply or call the number in the message. Check recent activity in your bank’s official app, or call the number on the back of your card.'},
   investment: {label: 'Investment scam', advice: 'Guaranteed returns do not exist. Do not send money or crypto; check the firm with your financial regulator.'},
   relationship_opener: {label: 'Wrong-number opener', advice: 'Do not continue the chat. These friendly "wrong number" messages often lead to romance or crypto scams.'},
   impersonation: {label: 'Brand impersonation', advice: 'Contact the organization using its official app or a number you look up yourself.'},
@@ -193,18 +202,19 @@ export interface Analysis {
 }
 
 function pickTactic(ids: Set<SignalId>, text: string, brand?: Brand): Tactic {
-  if (ids.has('family_emergency')) return 'family_emergency';
-  if (ids.has('remote_access') || /\b(virus|infected|tech support|refund department)\b/i.test(text)) return 'tech_support';
+  if (ids.has('family_emergency') || ids.has('new_number')) return 'family_emergency';
+  if (ids.has('remote_access') || /\b(virus|infected|tech support|refund department|call (microsoft |apple |windows )?support)\b/i.test(text)) return 'tech_support';
   if (ids.has('one_time_code')) return 'code_theft';
+  if (ids.has('transaction_alert') && (ids.has('callback') || ids.has('brand_link_mismatch') || ids.has('shortened_link'))) return 'fake_fraud_alert';
   if (ids.has('too_good')) return 'investment';
   if (ids.has('untraceable_payment')) return 'payment_fraud';
   if (ids.has('job_offer')) return 'job_scam';
   const riskyLink = ids.has('shortened_link') || ids.has('brand_link_mismatch') || ids.has('lookalike_domain') || ids.has('ip_link') || ids.has('punycode_link');
   if (/\b(deliver(y|ed)?|package|parcel|shipment|redelivery)\b/i.test(text) && (ids.has('payment') || ids.has('urgency') || riskyLink)) return 'delivery_fee';
-  if (ids.has('payment') && (riskyLink || ids.has('threat'))) return 'fake_bill';
+  if (ids.has('surprise_renewal') || (ids.has('payment') && (riskyLink || ids.has('threat')))) return 'fake_bill';
   if (ids.has('wrong_number')) return 'relationship_opener';
   if (ids.has('prize')) return 'prize_lure';
-  if (ids.has('credentials') || ids.has('threat')) return 'account_takeover';
+  if (ids.has('threat') || ids.has('identity_request') || (ids.has('credentials') && riskyLink)) return 'account_takeover';
   if (brand && (ids.has('brand_link_mismatch') || ids.has('brand_sender_mismatch'))) return 'impersonation';
   return 'unclassified';
 }
@@ -216,7 +226,9 @@ function pickTactic(ids: Set<SignalId>, text: string, brand?: Brand): Tactic {
 export function analyze(raw: string): Analysis {
   const msg = parseMessage(raw);
   const text = raw;
-  const signals: Signal[] = TEXT_RULES.filter(r => r.test.test(text)).map(({id, weight, label}) => ({id, weight, label}));
+  // A genuine code message says "do not share"; only count it when someone asks for the code.
+  const genuineCode = /\b(do not|don'?t|never) share\b/i.test(text) && !/\b(send|tell|read|give|share)\b[^.\n]{0,20}\b(me|us)\b/i.test(text);
+  const signals: Signal[] = TEXT_RULES.filter(r => r.test.test(text) && !(r.id === 'one_time_code' && genuineCode)).map(({id, weight, label}) => ({id, weight, label}));
   const hosts = extractHosts(text);
   // "Apple gift cards" names a payment method, not the sender: ignore brands inside gift-card phrases.
   const brandText = text.replace(/\b(apple|google play|amazon|itunes|steam|target|walmart)\s+gift ?cards?\b/gi, 'gift cards');
@@ -233,7 +245,8 @@ export function analyze(raw: string): Analysis {
     if (brand && !isOfficial(host, brand)) add('brand_link_mismatch', 3, `Mentions ${brand.name}, but the link goes to ${host}`);
   }
   if (msg.senderDomain && LOOKALIKE.test(msg.senderDomain)) add('lookalike_domain', 2, `Sender domain dressed up to look official (${msg.senderDomain})`);
-  if (brand && signals.some(s => s.id === 'one_time_code' || s.id === 'credentials' || s.id === 'untraceable_payment')) add('brand_sensitive_request', 2, `Claims to be ${brand.name} and asks for sensitive information`);
+  // A real "log in to the app" notice has no link; credential requests only count with one.
+  if (brand && signals.some(s => s.id === 'one_time_code' || s.id === 'untraceable_payment' || s.id === 'identity_request' || (s.id === 'credentials' && hosts.length > 0))) add('brand_sensitive_request', 2, `Claims to be ${brand.name} and asks for sensitive information`);
   if (/\bhttp:\/\//i.test(text)) add('insecure_link', 1, 'Link is not encrypted (http)');
   if (brand && msg.senderDomain && !isOfficial(msg.senderDomain, brand)) add('brand_sender_mismatch', 3, `Claims to be ${brand.name}, but was sent from ${msg.senderDomain}`);
   if (msg.authFailures.length) add('auth_failed', 3, `Email failed sender checks (${msg.authFailures.join(', ')}): it may not come from who it says`);
