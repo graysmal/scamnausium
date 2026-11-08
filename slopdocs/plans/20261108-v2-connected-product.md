@@ -19,10 +19,16 @@ Branch `overnight/v2` (from `overnight/integrations`). Local only, not pushed. R
 8. Voice agent: prompt in `docs/voice-agent-prompt.md`; `scripts/apply-agent-prompt.ts` (GET + local backup, PATCH conversation_config.agent.{first_message,prompt.prompt,prompt.built_in_tools.end_call}); dry-run by default. Not executed by agent.
 
 ## Tasks
-- [ ] domain v2 analyzer + parser + sanitizer
-- [ ] module: schema (indicators kind/fingerprint, campaigns brand/tactic, incidents headline/senderDomain, calls), reducers
-- [ ] gateway: /api/report, ElevenLabs poller, call upserts, status
-- [ ] frontend rebuild w/ Cytoscape
-- [ ] voice prompt + apply script
-- [ ] update tests to new keys; smokes pass
-- [ ] docs/README/TASKS/slopdocs
+- [x] domain v2 analyzer + parser + sanitizer
+- [x] module: schema (indicators kind/fingerprint, campaigns brand/tactic, incidents headline/senderDomain, calls), reducers
+- [x] gateway: /api/report, ElevenLabs poller, call upserts, status
+- [x] frontend rebuild w/ Cytoscape
+- [x] voice prompt + apply script
+- [x] update tests to new keys; smokes pass
+- [x] docs/README/TASKS/slopdocs
+
+## Outcome (end of session)
+- All tasks done and pushed to origin/overnight/v2. PR not opened (no `gh` CLI): https://github.com/graysmal/scamnausium/pull/new/overnight/v2
+- NOT verified live: ElevenLabs polling against the real API (no API key in session); agent prompt script never run.
+- UI verified by headless Chrome screenshots at 1920x1080 (network, incident detail, call detail, customer).
+- Gotchas found: cytoscape layout must be debounced (tables arrive one subscription at a time) and must fit on every structural layout; Instrument Serif numerals read like letters ("11" -> "ll") so stats use Inter tabular-nums; zsh doesn't word-split $VARS (Chrome flags got dropped).

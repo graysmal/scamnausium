@@ -43,3 +43,6 @@ spacetime.local.*
 *.swp
 coverage/
 .vite/
+
+# ElevenLabs agent config backups (may contain account details)
+.agent-backups/

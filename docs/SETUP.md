@@ -22,7 +22,7 @@ No account creation, number purchase, provider verification, or API request has 
 Follow Photon’s current ElevenLabs voice recipe from the guide above.
 
 1. Create an ElevenLabs account and publish a conversational agent.
-2. Use this role-play prompt: “You are Alex, a fictional adult participant in a consenting scam-awareness demonstration. Introduce the session as a simulation. Do not request or provide real passwords, one-time codes, financial data or personal identifiers. If asked for sensitive information, decline and explain an independent verification step.”
+2. Use the honeypot prompt in [`voice-agent-prompt.md`](voice-agent-prompt.md) (or `npm run agent:prompt -- --apply`), and enable the End call system tool.
 3. In Photon, configure the selected voice-capable line’s inbound SIP voice profile. The current guide uses `sips:sip.rtc.elevenlabs.io:5061` with TLS. If ElevenLabs supplies inbound SIP credentials, use those, not the Photon API key.
 4. Import the exact Photon number as an ElevenLabs SIP trunk and assign the published agent/branch. Keep encryption and codec settings aligned with the guide.
 5. Call it from a separate team-controlled phone, disclose the test to participants, verify two-way audio and clean termination.

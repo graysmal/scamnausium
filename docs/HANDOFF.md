@@ -28,7 +28,7 @@ HONEYPOT_NUMBER=+1 (617) 993-9239
 
 ## Not done or not verified
 - No real call has gone through the new app path yet. The API key wasn't available here. First thing to try: set the vars above, call the number once, and watch the left rail.
-- The ElevenLabs agent prompt still needs fixing (admits it's a scam, doesn't hang up). See `docs/voice-agent-prompt.md` if it exists by the time you read this.
+- Agent prompt fix is written but **not applied**: `docs/voice-agent-prompt.md`. Preview with `npm run agent:prompt`, apply with `npm run agent:prompt -- --apply` (saves a backup first), or paste it into the dashboard by hand. Also turn on the End call tool.
 - The duplicate `scamnasium/` folder from the first commit is still there. Delete it if nobody needs it.
 
 Checks that passed: `npm run check`, `npm test` (15), `npm run build`, `test:smoke`, `test:gateway`, `test:webhook`.

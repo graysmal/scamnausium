@@ -1,5 +1,7 @@
 # scamnasium
 
+> **Latest work and how to run it: [docs/HANDOFF.md](docs/HANDOFF.md).**
+
 A working local prototype for collective scam defense: synthetic reports, explainable campaign links, customer guidance, and a controlled first-party decoy collector. Built from the official SpacetimeDB React/TypeScript starter.
 
 ## What works
