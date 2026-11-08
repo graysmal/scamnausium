@@ -1,61 +1,92 @@
-# scamnausium
+# scamnasium
 
-**Real-time collective scam defense, inspired by AdNauseam.**
+A working local prototype for collective scam defense: synthetic reports, explainable campaign links, customer guidance, and a controlled first-party decoy collector. Built from the official SpacetimeDB React/TypeScript starter.
 
-> **Hackathon starter specification — implementation not yet present.** Do not describe the planned integrations as working until they have been implemented and verified.
+## What works
 
-Scamnausium explores an unconventional way to defend people against scams. Beyond detecting suspicious messages and calls, it correlates campaigns across a shared threat network, provides understandable customer-facing protection, and runs **authorized synthetic decoy scenarios** against a **first-party mock scam collector**. The demo illustrates how coherent decoy information could make a simulated attacker dataset less useful, without submitting traffic to real scammers.
+- React command center, customer protection, mock collector, and integration setup views.
+- SpacetimeDB 2.14.1 authoritative tables, generated TypeScript bindings, live subscriptions.
+- Four deterministic scenarios: delivery, parcel variant, bank alert, simulated support call.
+- Validated reported → analyzed → linked → protected lifecycle. “Protected” means guidance shown, not a carrier block.
+- Bounded collector: 3 synthetic baseline records + 9 tagged synthetic decoys per run; no external target URLs or traffic.
+- Private publishing-identity authorization, local gateway operator secret, request limits and reducer idempotency.
 
-## Sponsor tracks
+**Not integrated yet:** Photon live ingestion/replies, ElevenLabs SIP and verified webhooks. The typed Photon adapter compiles against the installed official SDK but is not wired to a polling worker. No provider requests or messages have been sent. Configured credentials show “Awaiting verification,” never “Live.”
 
-- **T-Mobile:** Prevention and guidance before, during, and after a scam; privacy, honesty, and creative protection beyond a classifier.
-- **SpacetimeDB:** The real-time source of truth for incidents, campaigns, decoy events, interventions, and synchronized interfaces.
-- **Photon 2.0:** Native communications integrations, emphasizing a live inbound voice call, plus iMessage reports and replies when available.
+## Run on your machine
 
-## Intended demo
+Use Node.js 24.22.1+ (tested) and SpacetimeDB CLI **2.14.1**. From the extracted `scamnasium` folder:
 
-1. Inject a synthetic phishing message and watch the incident appear.
-2. Show evidence-based analysis and suggested customer actions.
-3. Submit a variant of the same campaign; the live relationship graph connects them.
-4. Start a **controlled** decoy scenario and watch the mock collector's decoy share rise.
-5. Make an actual team-owned phone call into a Photon voice-capable number connected over SIP to an AI voice agent; show call metadata or a post-call webhook in the incident feed.
-6. Show a real Photon iMessage round trip if a permitted iMessage sender and line are available.
-7. Finish in the customer view: clear actions, uncertainty, and privacy disclosures.
+```bash
+# Install CLI if needed, following the official vendor installer:
+curl -sSf https://install.spacetimedb.com | sh -s -- --yes
+export PATH="$HOME/.local/bin:$PATH"
+npm ci
+npm ci --prefix spacetimedb
+```
 
-## Planned stack
+Terminal 1 — keep the database running:
 
-React + Vite + Tailwind · TypeScript · SpacetimeDB 2.0 · Node.js/Express gateway · Photon 2.0 API · optional ElevenLabs voice agent and LLM analysis.
+```bash
+spacetime start --listen-addr 127.0.0.1:3000
+```
 
-## Setup (to be completed as code lands)
+Terminal 2 — publish using the local CLI identity, initialize private config, start gateway:
 
-Prerequisites: Node.js 22+, SpacetimeDB CLI, and optionally a Photon 2.0 project with eligible messaging/voice resources.
+```bash
+spacetime publish scamnasium --server local --yes
+npm run setup:local
+npm run gateway
+```
 
-Start by following the [official SpacetimeDB React quickstart](https://spacetimedb.com/docs/quickstarts/react/) (`spacetime dev --template react-ts`) in this repository. It should generate `spacetimedb/src/`, `src/`, and the client bindings. Agents must then populate these files and document the verified commands below.
+Terminal 3:
 
-**Verified setup commands:** _Not yet available; this repository contains planning files only._
+```bash
+npm run dev
+```
 
-**Local demo mode:** Must eventually run without Photon/ElevenLabs/LLM keys, using synthetic scenarios. Real provider integrations must be visibly labeled and opt-in.
+Open http://localhost:5173. Open `.env` locally and copy `OPERATOR_DEMO_SECRET` into the dashboard operator field. It remains in page memory only; the database service token stays on the server. Never share or commit `.env`. The setup script preserves an existing `.env`.
 
-**Configuration:** Agents should create `.env.example` with placeholders once they scaffold the gateway. Never commit real `.env` files or access tokens. For likely variables, see `docs/INTEGRATIONS.md`.
+No Photon, ElevenLabs or hosted SpacetimeDB account is required for this local demo. The module publisher is its sole operator. Publish and run `setup:local` using the same CLI identity. Do not expose this local prototype to the internet without deployment/auth hardening.
 
-## Project documentation
+### Demo
 
-- [`AGENTS.md`](AGENTS.md) — authoritative coding-agent requirements, boundaries, architecture, and completion criteria
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — data ownership, flows, and schema
-- [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md) — Photon voice/iMessage and SpacetimeDB integration notes
-- [`docs/TASKS.md`](docs/TASKS.md) — twelve-hour implementation plan and acceptance gates
-- [`docs/DEMO.md`](docs/DEMO.md) — scripted pitch, test scenarios, and honest fallbacks
+Open two browser windows. Enter the operator secret in one. Inject **Delivery**, then **Variant**. Both should show one campaign with two reports. Select a report, launch controlled decoys, then open Mock collector in the second window. It should reach 12 records and 75% decoys. Show customer guidance, then click **Mark guidance shown**. All content is labeled simulated.
 
-## Safety and scope
+## Provider setup
 
-The project uses **synthetic data and authorized test systems only**. No mass contact, proxy evasion, third-party phishing traffic, unsolicited calling, or ingestion of real private communications. The attacker-facing UI is a labeled simulation. This is a research/prototype concept, not a proven reduction in real-world fraud.
+See [docs/SETUP.md](docs/SETUP.md) for the account steps to complete now. Do not paste API keys into chat. Put them in your local `.env` only. Live messaging stays disabled by default.
 
-## Status
+## Verification
 
-- [x] Project specification and agent instructions
-- [ ] App scaffold and first SpacetimeDB reducer
-- [ ] Multi-view realtime demo
-- [ ] Controlled decoy engine
-- [ ] Photon inbound voice verification
-- [ ] Photon iMessage verification
-- [ ] Recorded end-to-end demo and pitch
+```bash
+npm run check
+npm test
+npm run build
+# With local SpacetimeDB running and .env populated:
+npm run test:smoke
+# With gateway also running:
+node --import tsx tests/gateway-smoke.ts
+```
+
+**The smoke test resets the named local synthetic demo database.** Do not point it at a shared judging session. Gateway test injects a synthetic bank event.
+
+Verified in the build environment:
+
+- Frontend, module, gateway and adapter typechecks passed.
+- Two unit tests passed (correlation and state transitions).
+- Module built and published to a real local SpacetimeDB instance.
+- Two independent SDK subscribers received reducer mutations; dedupe, invalid transitions, authorization, event caps and a fresh reconnect snapshot passed.
+- Gateway status, unauthorized requests, authenticated injection and rate limits passed.
+- Production frontend build passed.
+- Browser inspection confirmed dashboard and setup navigation/rendering in the disconnected state. Full connected browser interaction is not yet verified; the browser preview and database test ran in separate network environments.
+
+## Implementation notes
+
+Generated bindings are committed to this starter. After schema changes run `npm run generate` and republish. Client state is never authoritative. The Node gateway holds one database connection; on disconnect restart the gateway after restoring the server. Browser reconnect recovery beyond a fresh connection is a remaining test item.
+
+Public tables contain synthetic summaries only. The collector uses events as records; there is no arbitrary URL input or network submission. Simulation is fixed at 12 records and up to 20 sessions before reset. This is not a measurement of real scam prevention.
+
+The initial spec says “scamnausium”; the implementation follows the project name “scamnasium.” It uses plain CSS for this first slice rather than adding Tailwind. State transitions are intentionally separate reducers for testability; the gateway runs analysis/linking in order. A gateway failure mid-flow can leave a reported/analyzed row; reset and rerun the synthetic demo while recovery controls are pending.
+
+No hosting deployment or GitHub push has been performed. This archive is a runnable source starter, not a hosted full-stack service.

@@ -1,0 +1,41 @@
+{
+  "name": "scamnasium",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "generate": "spacetime generate --lang typescript --out-dir src/module_bindings --module-path spacetimedb",
+    "spacetime:generate": "spacetime generate --lang typescript --out-dir src/module_bindings --module-path spacetimedb",
+    "spacetime:publish:local": "spacetime publish scamnasium --module-path spacetimedb --server local",
+    "spacetime:publish": "spacetime publish --module-path spacetimedb --server maincloud",
+    "gateway": "node --import tsx services/gateway/src/index.ts",
+    "setup:local": "node scripts/setup-local.mjs",
+    "test": "node --import tsx --test tests/domain.test.ts",
+    "test:smoke": "node --import tsx tests/smoke.ts",
+    "check": "tsc --noEmit && tsc --noEmit -p spacetimedb/tsconfig.json && tsc --noEmit -p tsconfig.gateway.json"
+  },
+  "dependencies": {
+    "@photon-ai/api": "^0.6.0",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "spacetimedb": "2.14.*"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.6",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^5.0.2",
+    "tsx": "^4.23.15",
+    "typescript": "~5.6.2",
+    "vite": "^7.1.5"
+  },
+  "engines": {
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
+  }
+}

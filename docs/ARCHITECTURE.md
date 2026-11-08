@@ -1,3 +1,5 @@
+> Initial implementation: see README for verified scope. The module uses publishing-identity authorization; gateway hosts synthetic actions. Provider ingestion is still planned. Decoy event rows serve as the synthetic collector records.
+
 # Architecture and contracts
 
 > This is a **proposed implementation**, not documentation of running code. `AGENTS.md` governs scope and safety.

@@ -1,3 +1,5 @@
+> Implementation update: local MVP source created. Real module publication and two SDK subscribers verified; connected browser end-to-end and provider round trips remain pending. See README and SETUP.md for exact status.
+
 # 12-hour execution plan and shared checklist
 
 > These are **uncompleted** tasks in a starter repository. Check a task only after verifying its acceptance condition. A team member should claim ownership next to a section when work begins.
@@ -15,21 +17,21 @@
 
 ## Hour 0–1 — Foundations and provider feasibility
 
-- [ ] Read `AGENTS.md` and current official SpacetimeDB/Photon docs.
+- [x] Read `AGENTS.md` and current official SpacetimeDB/Photon docs.
 - [ ] Bootstrap SpacetimeDB React starter; app loads.
 - [ ] Prove one reducer mutation updates two browser clients.
 - [ ] Create Photon 2.0 project and inspect available number types and billing.
 - [ ] Attempt **inbound voice** setup immediately; confirm an eligible number is obtainable.
 - [ ] Identify a genuine iMessage-capable sender if iMessage is part of the live demo.
-- [ ] Agree on `sourceKind` / demo-vs-live event labels and schemas.
+- [x] Agree on `sourceKind` / demo-vs-live event labels and schemas.
 
 **Gate:** SpacetimeDB is truly working; Photon access issues are identified rather than discovered at the end.
 
 ## Hour 1–3 — Primary functionality
 
-- [ ] Create incidents, campaigns, indicators, decoy sessions/events, interventions and dedupe records as needed.
-- [ ] Implement validated incident and session reducer transitions.
-- [ ] Seed 3 synthetic scam scenarios (delivery fee, fake bank security alert, fraudulent customer support call).
+- [x] Create incidents, campaigns, indicators, decoy sessions/events, interventions and dedupe records as needed.
+- [x] Implement validated incident and session reducer transitions.
+- [x] Seed 3 synthetic scam scenarios (delivery fee, fake bank security alert, fraudulent customer support call).
 - [ ] Build connected incident feed + campaign graph + live counters.
 - [ ] Build customer view with risk, evidence, confidence, next steps, and data-source label.
 
@@ -40,7 +42,7 @@
 - [ ] Add deterministic scam checks for requests for OTP, card/payment details, urgency, brand impersonation, and suspicious link patterns.
 - [ ] Return structured evidence and confidence labels; optionally enrich wording with an LLM.
 - [ ] Implement controlled first-party mock collector and a small synthetic persona library.
-- [ ] Add operator-triggered bounded decoy run (never third-party traffic, never unbounded loops).
+- [x] Add operator-triggered bounded decoy run (never third-party traffic, never unbounded loops).
 - [ ] Chart actual simulated collector data; show decoy ratio and counts honestly.
 
 **Gate:** One click starts a decoy session; events increment in SpacetimeDB and both dashboards visibly update.
@@ -51,7 +53,7 @@
 - [ ] Reply once to an allowlisted team-owned test conversation, with idempotency and status tracking.
 - [ ] Complete Photon -> ElevenLabs inbound SIP call; verify two-way audio with a phone.
 - [ ] Connect post-call event or verified provider status -> gateway -> incident (or document blocker).
-- [ ] Show provider status in UI: live, unavailable, or simulated.
+- [x] Show provider status in UI: live, unavailable, or simulated.
 - [ ] Integrate all three UI views with production reducers and scenario controller.
 
 **Gate:** Show at least one complete real provider event if available, without causing the demo to fail if unavailable.
@@ -68,7 +70,7 @@
 
 ## Hour 10–12 — Verify, pitch, rehearse
 
-- [ ] Typecheck/build/test; record commands and results in README.
+- [x] Typecheck/build/test; record commands and results in README.
 - [ ] Test reducer state transitions, campaign matching, duplicate provider events, and unauthorized operator actions.
 - [ ] Verify no credentials/real contacts in frontend bundles or public tables.
 - [ ] Capture real fallback evidence (screen recording of verified integrations) if permitted.
