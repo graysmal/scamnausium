@@ -54,6 +54,7 @@ async function post<T>(path: string, secret: string, body: unknown): Promise<T> 
 export type Action =
   | {action: 'inject'; scenarioId: 'delivery' | 'variant' | 'bank' | 'voice'}
   | {action: 'protect'; incidentId: string}
+  | {action: 'dismiss'; incidentId: string}
   | {action: 'decoys'; campaignId: string}
   | {action: 'reset'};
 

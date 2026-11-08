@@ -81,13 +81,15 @@ test('parsePostCall ignores other agents, other event types and empty summaries'
 function fakeConn(failAnalyzeOnce = false) {
   const rows = new Map<string, { status: string }>();
   const calls: string[] = [];
+  const linkableIds = new Set([externalEventId('el', 'c1')]);
   let failNext = failAnalyzeOnce;
   const conn: IngestConnection = {
     db: { incidents: { id: { find: (id: string) => rows.get(id) } } },
     reducers: {
       reportExternalIncident: async ({ eventId }) => { calls.push('report'); rows.set(eventId, { status: 'reported' }); },
       analyzeIncident: async ({ incidentId }) => { calls.push('analyze'); if (failNext) { failNext = false; throw new Error('boom'); } rows.set(incidentId, { status: 'analyzed' }); },
-      linkIncident: async ({ incidentId }) => { calls.push('link'); rows.set(incidentId, { status: 'linked' }); },
+      // Mirrors the module: a no-op without a scam pattern.
+      linkIncident: async ({ incidentId }) => { calls.push('link'); if (linkableIds.has(incidentId)) rows.set(incidentId, { status: 'linked' }); },
     } as IngestConnection['reducers'],
   };
   return { conn, rows, calls };
@@ -112,10 +114,14 @@ test('ingestor resumes a partially processed event on retry', async () => {
   assert.deepEqual(calls, ['report', 'analyze', 'analyze', 'link']);
 });
 
-test('ingestor does not link unclassified reports', async () => {
-  const { conn, calls } = fakeConn();
-  await createIngestor(conn).ingest({ ...otpReport, eventId: externalEventId('ph', 'm9'), summary: 'iMessage report: lunch at noon?' });
-  assert.deepEqual(calls, ['report', 'analyze']);
+test('ingestor leaves the link decision to the module and treats a complete unclassified replay as duplicate', async () => {
+  const { conn, calls, rows } = fakeConn();
+  const ing = createIngestor(conn);
+  const lunch = { ...otpReport, eventId: externalEventId('ph', 'm9'), summary: 'iMessage report: lunch at noon?' };
+  assert.equal(await ing.ingest(lunch), 'created');
+  assert.equal(rows.get(lunch.eventId)?.status, 'analyzed');
+  assert.equal(await ing.ingest(lunch), 'duplicate');
+  assert.deepEqual(calls, ['report', 'analyze', 'link', 'link']);
 });
 
 // ---------- Photon poller ----------

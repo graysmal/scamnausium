@@ -7,6 +7,7 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import AnalyzeIncidentReducer from "../analyze_incident_reducer";
+import DismissIncidentReducer from "../dismiss_incident_reducer";
 import LinkIncidentReducer from "../link_incident_reducer";
 import ProtectIncidentReducer from "../protect_incident_reducer";
 import RecordDecoyEventReducer from "../record_decoy_event_reducer";
@@ -17,6 +18,7 @@ import StartDecoySessionReducer from "../start_decoy_session_reducer";
 import UpsertCallReducer from "../upsert_call_reducer";
 
 export type AnalyzeIncidentParams = __Infer<typeof AnalyzeIncidentReducer>;
+export type DismissIncidentParams = __Infer<typeof DismissIncidentReducer>;
 export type LinkIncidentParams = __Infer<typeof LinkIncidentReducer>;
 export type ProtectIncidentParams = __Infer<typeof ProtectIncidentReducer>;
 export type RecordDecoyEventParams = __Infer<typeof RecordDecoyEventReducer>;

@@ -35,6 +35,7 @@ import {
 
 // Import all reducer arg schemas
 import AnalyzeIncidentReducer from "./analyze_incident_reducer";
+import DismissIncidentReducer from "./dismiss_incident_reducer";
 import LinkIncidentReducer from "./link_incident_reducer";
 import ProtectIncidentReducer from "./protect_incident_reducer";
 import RecordDecoyEventReducer from "./record_decoy_event_reducer";
@@ -156,6 +157,7 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("analyze_incident", AnalyzeIncidentReducer),
+  __reducerSchema("dismiss_incident", DismissIncidentReducer),
   __reducerSchema("link_incident", LinkIncidentReducer),
   __reducerSchema("protect_incident", ProtectIncidentReducer),
   __reducerSchema("record_decoy_event", RecordDecoyEventReducer),

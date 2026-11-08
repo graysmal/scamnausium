@@ -270,7 +270,8 @@ export function analyze(raw: string): Analysis {
 export function isLinkable(key: string) { return key !== 'unclassified'; }
 
 export function transition(current: string, next: string) {
-  const allowed: Record<string, string[]> = {reported: ['analyzed'], analyzed: ['linked', 'protected'], linked: ['protected'], protected: ['resolved']};
+  // 'dismissed' = an operator reviewed the report and judged it not a scam (false positive).
+  const allowed: Record<string, string[]> = {reported: ['analyzed'], analyzed: ['linked', 'protected', 'dismissed'], linked: ['protected', 'dismissed'], protected: ['resolved', 'dismissed']};
   if (!allowed[current]?.includes(next)) throw new Error(`Invalid transition: ${current} → ${next}`);
   return next;
 }

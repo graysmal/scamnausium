@@ -176,6 +176,9 @@ app.post('/api/action', limit(60, 60_000), async (req, res) => {
     } else if (action === 'protect' && typeof incidentId === 'string') {
       await conn.reducers.protectIncident({incidentId});
       res.json({ok: true});
+    } else if (action === 'dismiss' && typeof incidentId === 'string') {
+      await conn.reducers.dismissIncident({incidentId});
+      res.json({ok: true});
     } else if (action === 'decoys' && typeof campaignId === 'string') {
       const sessionId = crypto.randomUUID();
       await conn.reducers.startDecoySession({sessionId, campaignId});

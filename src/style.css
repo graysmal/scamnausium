@@ -254,3 +254,4 @@ button.tag:hover { border-color: var(--ink); color: var(--ink); }
 .playbook { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .playbook li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .playbook li:last-child { border-bottom: 0; }
+.dismissed-line { margin: 0; padding: 10px 12px; background: var(--sunken); border-radius: var(--radius); font-size: 13px; color: var(--ink-2); }

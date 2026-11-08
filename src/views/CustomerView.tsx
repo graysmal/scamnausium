@@ -60,6 +60,9 @@ export function CustomerView({data, focusId, onFocus, canReport, onReport, initi
       match: campaign ? {label: campaign.label, count: campaign.incidentCount} : undefined,
       fine: 'This check ran on your device and was not saved.',
     };
+  } else if (incident?.status === 'dismissed') {
+    card = {channel: (CHANNEL_LABEL[incident.channel] ?? 'message').toLowerCase(), risk: 'low', confidence: incident.confidenceLabel, headline: incident.headline,
+      signals: [], fine: 'An operator reviewed this report and marked it as not a scam.'};
   } else if (incident) {
     const risk = (incident.riskLevel in LEAD ? incident.riskLevel : 'low') as Risk;
     const campaign = data.campaigns.find(c => c.id === incident.campaignId);

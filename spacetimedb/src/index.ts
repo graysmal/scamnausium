@@ -95,7 +95,7 @@ export const linkIncident = db.reducer({incidentId: t.string()}, (ctx, {incident
   authorize(ctx);
   const row = ctx.db.incidents.id.find(incidentId); if (!row) throw new SenderError('Incident missing');
   const a = analyze(analysisInput(row));
-  if (!isLinkable(a.key)) throw new SenderError('Nothing to link: no scam pattern found');
+  if (!isLinkable(a.key)) return; // no scam pattern: nothing to link (callers may always call this after analyze)
   const status = transition(row.status, 'linked');
   const existing = ctx.db.campaigns.id.find(a.key);
   if (existing) ctx.db.campaigns.id.update({...existing, incidentCount: existing.incidentCount + 1, lastSeen: ctx.timestamp});
@@ -109,6 +109,20 @@ export const protectIncident = db.reducer({incidentId: t.string()}, (ctx, {incid
   ctx.db.incidents.id.update({...row, status: transition(row.status, 'protected')});
   const action = ctx.db.interventions.id.find(incidentId);
   if (action) ctx.db.interventions.id.update({...action, status: 'guidance_shown'});
+});
+
+// Operator marks a report as not a scam: it leaves its campaign (an emptied campaign is removed) and the graph.
+// Indicators stay so the original reasoning remains visible next to the decision.
+export const dismissIncident = db.reducer({incidentId: t.string()}, (ctx, {incidentId}) => {
+  authorize(ctx);
+  const row = ctx.db.incidents.id.find(incidentId); if (!row) throw new SenderError('Incident missing');
+  const status = transition(row.status, 'dismissed');
+  const campaign = row.campaignId ? ctx.db.campaigns.id.find(row.campaignId) : undefined;
+  if (campaign && campaign.incidentCount <= 1) ctx.db.campaigns.id.delete(campaign.id);
+  else if (campaign) ctx.db.campaigns.id.update({...campaign, incidentCount: campaign.incidentCount - 1});
+  ctx.db.incidents.id.update({...row, status, campaignId: ''});
+  const action = ctx.db.interventions.id.find(incidentId);
+  if (action) ctx.db.interventions.id.update({...action, status: 'dismissed'});
 });
 
 export const upsertCall = db.reducer({id: t.string(), providerStatus: t.string(), startedAtSecs: t.u64(), durationSecs: t.u32(), title: t.string()}, (ctx, {id, providerStatus, startedAtSecs, durationSecs, title}) => {

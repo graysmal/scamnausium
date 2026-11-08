@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { analyze,scenarios,transition } from '../spacetimedb/src/domain';
 test('parcel variants correlate on evidence while bank remains distinct',()=>{assert.equal(analyze(scenarios.delivery.text).key,analyze(scenarios.variant.text).key);assert.notEqual(analyze(scenarios.delivery.text).key,analyze(scenarios.bank.text).key);assert.equal(analyze(scenarios.voice.text).key,'code_theft:amazon');});
-test('incident state machine rejects skipping analysis and repeated protection',()=>{assert.equal(transition('reported','analyzed'),'analyzed');assert.throws(()=>transition('reported','protected'));assert.throws(()=>transition('protected','protected'));});
+test('incident state machine rejects skipping analysis and repeated protection',()=>{assert.equal(transition('reported','analyzed'),'analyzed');assert.throws(()=>transition('reported','protected'));assert.throws(()=>transition('protected','protected'));assert.equal(transition('linked','dismissed'),'dismissed');assert.throws(()=>transition('reported','dismissed'));assert.throws(()=>transition('dismissed','linked'));});
 
 // Regression corpus: tactic + minimum risk for common scam types and benign texts.
 test('analyzer corpus: common scam types get the right tactic and risk', () => {

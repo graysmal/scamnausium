@@ -22,6 +22,7 @@ interface Props {
 }
 
 function Steps({status}: {status: string}) {
+  if (status === 'dismissed') return <p className="dismissed-line">Reviewed by an operator: not a scam. Removed from campaigns and the graph.</p>;
   const reached = STATUS_STEPS.indexOf(status as (typeof STATUS_STEPS)[number]);
   return (
     <ol className="steps" aria-label={`Status: ${status}`}>
@@ -38,7 +39,7 @@ function IncidentRow({incident, campaign, onSelect}: {incident: Incidents; campa
         <span className={`risk-mark risk-${incident.riskLevel}`} aria-label={RISK_LABEL[incident.riskLevel]} />
         <span className="row-main">
           <span className="row-title">{incident.headline}</span>
-          <span className="row-meta">{CHANNEL_LABEL[incident.channel] ?? incident.channel} · <span className={`tone-${p.tone}`}>{p.label}</span>{campaign ? ` · ${campaign.label}` : ''}</span>
+          <span className="row-meta">{CHANNEL_LABEL[incident.channel] ?? incident.channel} · <span className={`tone-${p.tone}`}>{p.label}</span>{campaign ? ` · ${campaign.label}` : ''}{incident.status === 'dismissed' ? ' · Not a scam' : ''}</span>
         </span>
         <span className="row-time">{timeAgo(incident.createdAt)}</span>
       </button>
@@ -56,6 +57,7 @@ function IncidentDetail({incident, data, onSelect, onAction, canAct}: {incident:
   const call = data.calls.find(c => c.id === incident.id);
   const p = provenance(incident.sourceKind);
   const canProtect = incident.status === 'analyzed' || incident.status === 'linked';
+  const dismissed = incident.status === 'dismissed';
   const parsed = parseMessage(incident.summary);
   const body = parsed.body || incident.summary;
   const authLine = incident.summary.match(/^Auth:\s*(.*)$/im)?.[1];
@@ -100,9 +102,17 @@ function IncidentDetail({incident, data, onSelect, onAction, canAct}: {incident:
 
       <div className="actions">
         {campaign && <button type="button" className="primary" disabled={!canAct} onClick={() => onAction({action: 'decoys', campaignId: campaign.id})}>Run decoy session</button>}
-        <button type="button" disabled={!canAct || !canProtect} onClick={() => onAction({action: 'protect', incidentId: incident.id})}>
-          {incident.status === 'protected' ? 'Guidance shown' : 'Mark guidance shown'}
-        </button>
+        {!dismissed && (
+          <button type="button" disabled={!canAct || !canProtect} onClick={() => onAction({action: 'protect', incidentId: incident.id})}>
+            {incident.status === 'protected' ? 'Guidance shown' : 'Mark guidance shown'}
+          </button>
+        )}
+        {!dismissed && incident.status !== 'reported' && (
+          <button type="button" className="link" disabled={!canAct}
+            onClick={() => { if (window.confirm('Mark this report as not a scam? It leaves its campaign and the graph.')) onAction({action: 'dismiss', incidentId: incident.id}); }}>
+            Not a scam
+          </button>
+        )}
       </div>
       {campaign && <button type="button" className="link" onClick={() => onSelect({kind: 'campaign', id: campaign.id})}>Part of {campaign.label} ({campaign.incidentCount}) →</button>}
     </article>

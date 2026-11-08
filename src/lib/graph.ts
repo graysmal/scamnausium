@@ -35,6 +35,8 @@ export function sharedIndicators(indicators: readonly Indicators[]): Map<string,
 
 export function buildElements(incidents: readonly Incidents[], campaigns: readonly Campaigns[], indicators: readonly Indicators[], calls: readonly Calls[] = []): ElementDefinition[] {
   const elements: ElementDefinition[] = [];
+  // Dismissed reports (operator: not a scam) stay in the feed but leave the graph.
+  incidents = incidents.filter(i => i.status !== 'dismissed');
   const incidentIds = new Set(incidents.map(i => i.id));
   for (const c of campaigns) {
     elements.push({group: 'nodes', data: {id: nodeId.campaign(c.id), kind: 'campaign', label: c.label, weight: c.incidentCount}});
