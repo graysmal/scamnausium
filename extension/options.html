@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>scamnasium</title>
+  <style>
+    body { font: 13px/1.45 Inter, system-ui, sans-serif; color: #17171b; background: #f4f2ee; margin: 0; padding: 16px; width: 300px; }
+    h1 { font: 400 22px Georgia, serif; margin: 0 0 6px; }
+    p { margin: 0 0 12px; color: #55555e; }
+    label { display: block; font-weight: 600; margin-bottom: 4px; }
+    input { width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid #c9c4ba; border-radius: 6px; font: inherit; background: #fff; }
+    button { margin-top: 10px; padding: 7px 12px; border: 0; border-radius: 6px; background: #17171b; color: #f4f2ee; font: inherit; font-weight: 600; cursor: pointer; }
+    #saved { margin-left: 8px; color: #55555e; }
+  </style>
+</head>
+<body>
+  <h1>scamnasium</h1>
+  <p>Select a suspicious message on any page, right-click, and choose <b>Check with scamnasium</b>. The check runs in your scamnasium app; nothing is sent until you choose to report it.</p>
+  <label for="app">App address</label>
+  <input id="app" type="url" placeholder="http://localhost:5173/">
+  <button id="save" type="button">Save</button><span id="saved"></span>
+  <script src="options.js"></script>
+</body>
+</html>

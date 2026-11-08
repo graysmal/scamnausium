@@ -30,11 +30,13 @@ interface Props {
   onFocus: (id: string) => void;
   canReport: boolean;
   onReport: (text: string) => Promise<boolean>;
+  /** Pre-filled text, e.g. from the browser extension. */
+  initialDraft?: string;
 }
 
 /** What the protected customer sees: plain language, one next step, honest confidence. */
-export function CustomerView({data, focusId, onFocus, canReport, onReport}: Props) {
-  const [draft, setDraft] = useState('');
+export function CustomerView({data, focusId, onFocus, canReport, onReport, initialDraft = ''}: Props) {
+  const [draft, setDraft] = useState(initialDraft);
   const deferred = useDeferredValue(draft);
   const ordered = useMemo(() => [...data.incidents].sort((a, b) => toMs(b.createdAt) - toMs(a.createdAt)), [data.incidents]);
   const incident: Incidents | undefined = ordered.find(i => i.id === focusId) ?? ordered[0];
@@ -56,7 +58,7 @@ export function CustomerView({data, focusId, onFocus, canReport, onReport}: Prop
       signals: [...a.signals].sort((x, y) => y.weight - x.weight).slice(0, 4).map(s => ({id: s.id, text: s.label})),
       advice: a.riskLevel === 'low' ? undefined : a.recommendation,
       match: campaign ? {label: campaign.label, count: campaign.incidentCount} : undefined,
-      fine: 'Checked on this device. Nothing was sent or saved.',
+      fine: 'This check ran on your device and was not saved.',
     };
   } else if (incident) {
     const risk = (incident.riskLevel in LEAD ? incident.riskLevel : 'low') as Risk;

@@ -36,6 +36,20 @@ function writeHash(view: View, selection: Selection) {
   if (window.location.hash !== next) window.history.replaceState(null, '', next);
 }
 
+/** Text handed over by the browser extension (?check=…). Read once, then removed from the address bar and history. */
+function takeSharedText(): string {
+  const params = new URLSearchParams(window.location.search);
+  const text = params.get('check') ?? '';
+  if (params.has('check')) {
+    params.delete('check');
+    const query = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}#customer`);
+  }
+  return text.slice(0, 500_000);
+}
+// Read at module load: state initializers run twice under StrictMode, and the first run clears the URL.
+const SHARED_TEXT = takeSharedText();
+
 const SECRET_KEY = 'scamnasium.operator';
 function readSecret(): string {
   try { return sessionStorage.getItem(SECRET_KEY) ?? ''; } catch { return ''; }
@@ -59,7 +73,8 @@ export default function App() {
   const [events] = useTable(tables.decoyEvents);
   const status = useGatewayStatus();
 
-  const [view, setView] = useState<View>(() => readHash().view);
+  const sharedText = SHARED_TEXT;
+  const [view, setView] = useState<View>(() => (sharedText ? 'customer' : readHash().view));
   const [selection, setSelection] = useState<Selection>(() => readHash().selection);
   useEffect(() => writeHash(view, selection), [view, selection]);
   useEffect(() => {
@@ -154,7 +169,7 @@ export default function App() {
             </div>
           )}
           {view === 'customer' && <CustomerView data={data} focusId={selection?.kind === 'incident' ? selection.id : undefined} onFocus={id => setSelection({kind: 'incident', id})}
-            canReport={canAct} onReport={text => onReport(text, 'auto', false)} />}
+            initialDraft={sharedText} canReport={canAct} onReport={text => onReport(text, 'auto', false)} />}
           {view === 'collector' && <CollectorView events={events} sessions={sessions} campaigns={campaigns} />}
           {view === 'setup' && <SetupView status={status} dbActive={isActive} />}
         </main>

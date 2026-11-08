@@ -97,3 +97,6 @@ Public tables contain synthetic summaries only. The collector uses events as rec
 The initial spec says “scamnausium”; the implementation follows the project name “scamnasium.” It uses plain CSS for this first slice rather than adding Tailwind. State transitions are intentionally separate reducers for testability; the gateway runs analysis/linking in order. A gateway failure mid-flow can leave a reported/analyzed row; reset and rerun the synthetic demo while recovery controls are pending.
 
 No hosting deployment or GitHub push has been performed. This archive is a runnable source starter, not a hosted full-stack service.
+
+## Browser extension
+Right-click any selected text → **Check with scamnasium** opens the Customer tab with the text checked locally. Load `extension/` unpacked in Chrome; see [`extension/README.md`](extension/README.md).
