@@ -9,6 +9,9 @@ Branch: `overnight/v2`. It includes `chore/gitignore-slopdocs` and `overnight/in
 - **Customer tab is a real tool.** Paste a message and get an instant verdict. It's computed in the browser and nothing is sent until you press **Report to protect others**. It also says when the message matches a known campaign.
 - **Browser extension** (`extension/`, load unpacked): right-click selected text, choose **Check with scamnasium**, and the Customer tab opens with that text checked.
 - **Campaigns** show their playbook (warning signs that recur across reports), the domains used, and caller time wasted. The graph has All / Texts / Emails / Calls filters, and new reports get a brief halo.
+- **"Not a scam"** on any report (operator): it leaves its campaign and the graph. New reducer `dismiss_incident`, so republish the module.
+- **Voice agent script** now also calms the voice (stability 0.75, speed 0.92) and caps calls at 10 minutes. Still not applied.
+- Linking is decided only by the module now. Previously a gateway running older code than the published module could skip links.
 - **New UI.** No green, no gradients. Controls are on the left, the graph is in the middle (Cytoscape: drag and click nodes), details are on the right. Also a customer view, collector and setup.
 - **iMessage:** texting a suspicious message to the Photon line files it as a report and, if replies are enabled, sends back a plain-language verdict ("Very likely a scam. Why: … Do this: …"). Polling is off by default. Replies need `ENABLE_LIVE_MESSAGING=true` and the sender in `ALLOWED_TEST_CONTACTS`.
 - **Live calls on the graph:** an in-progress call shows as a blue "Live call" node and turns into the filed report when it ends. The stats strip shows **Caller time wasted**, the real total length of honeypot calls.

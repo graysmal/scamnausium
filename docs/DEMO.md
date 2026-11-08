@@ -36,6 +36,6 @@
 
 ## Honesty rules for Q&A
 - Scenario data is simulated and labeled. Honeypot calls are real calls from our own phones.
-- The analyzer flags warning signs, not proof about a sender.
+- The analyzer flags warning signs, not proof about a sender. False positives: an operator can mark any report **Not a scam**. It leaves its campaign and the graph, and the original reasoning stays visible.
 - Decoy share is measured on our simulated collector only. Real-world impact would need authorized research.
 - We store only cleaned summaries: no transcripts, phone numbers or email usernames.
