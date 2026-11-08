@@ -1,11 +1,12 @@
 import type { Incidents } from '../module_bindings/types';
 import type { ScamData } from '../components/Inspector';
 import { CHANNEL_LABEL, provenance, toMs } from '../lib/format';
+import { VERDICT_TITLE } from '../../spacetimedb/src/domain';
 
-const VERDICT: Record<string, {title: string; lead: string}> = {
-  high: {title: 'This is very likely a scam', lead: 'Several warning signs point the same way.'},
-  medium: {title: 'This looks suspicious', lead: 'Some warning signs are present. Treat it with caution.'},
-  low: {title: 'No clear scam pattern', lead: 'We did not find common warning signs. Stay careful with links and codes.'},
+const LEAD: Record<string, string> = {
+  high: 'Several warning signs point the same way.',
+  medium: 'Some warning signs are present. Treat it with caution.',
+  low: 'We did not find common warning signs. Stay careful with links and codes.',
 };
 
 /** What the protected customer sees: plain language, one next step, honest confidence. */
@@ -13,7 +14,8 @@ export function CustomerView({data, focusId, onFocus}: {data: ScamData; focusId?
   const ordered = [...data.incidents].sort((a, b) => toMs(b.createdAt) - toMs(a.createdAt));
   const incident: Incidents | undefined = ordered.find(i => i.id === focusId) ?? ordered[0];
   if (!incident) return <div className="customer"><p className="quiet">No reports yet.</p></div>;
-  const verdict = VERDICT[incident.riskLevel] ?? VERDICT.low;
+  const risk = (incident.riskLevel in LEAD ? incident.riskLevel : 'low') as keyof typeof VERDICT_TITLE;
+  const verdict = {title: VERDICT_TITLE[risk], lead: LEAD[risk]};
   const signals = data.indicators.filter(i => i.incidentId === incident.id && i.kind === 'signal').sort((a, b) => b.weight - a.weight).slice(0, 4);
   const guidance = data.interventions.find(i => i.incidentId === incident.id);
   const p = provenance(incident.sourceKind);

@@ -127,7 +127,7 @@ function fakeAdapter(pages: ReceivedImessage[][], live = false) {
   const adapter: PollerAdapter = {
     listIncoming: async (since) => { cursors.push(since); return { items: pages.shift() ?? [] }; },
     replyToPing: async (m) => { replies.push(`ping:${m.id}`); },
-    replyAck: async (m) => { replies.push(`ack:${m.id}`); },
+    replyVerdict: async (m, text) => { replies.push(`verdict:${m.id}`); assert.match(text, /^(This is very likely a scam|This looks suspicious|No clear scam pattern)\./); },
     liveRepliesEnabled: () => live,
   };
   return { adapter, replies, cursors };
@@ -151,7 +151,7 @@ test('poller replies once per new report only when live replies are enabled', as
   const { adapter, replies } = fakeAdapter([[msg('m1', 'bank says verify password urgently', 't1'), msg('m2', 'ping', 't2')]], true);
   const poller = createPhotonPoller(adapter, async () => 'created', 't0');
   await poller.pollOnce();
-  assert.deepEqual(replies, ['ack:m1', 'ping:m2']);
+  assert.deepEqual(replies, ['verdict:m1', 'ping:m2']);
 });
 
 test('poller records errors without throwing and retries the message next poll', async () => {

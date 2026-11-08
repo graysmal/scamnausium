@@ -21,7 +21,6 @@ export function messageText(m:PhotonMessage):string{
  return m.content.type==='text'&&m.content.format==='plain'?m.content.text:'';
 }
 
-export const ACK_TEXT='Scamnasium received your report. This is a consenting synthetic demo: never share real passwords or one-time codes. Contact the organization through its official app or a number you verified yourself.';
 export const PING_TEXT='Scamnasium test connection received. This is a consenting synthetic demo; never share real passwords or one-time codes.';
 
 export function createPhotonAdapter(env:NodeJS.ProcessEnv=process.env){
@@ -47,7 +46,8 @@ export function createPhotonAdapter(env:NodeJS.ProcessEnv=process.env){
    if(messageText(message).trim()!=='ping')throw new Error('Only a plain-text ping receives the connection-test reply.');
    return reply(message,PING_TEXT,'scamnasium-ping');
   },
-  async replyAck(message:PhotonMessage){return reply(message,ACK_TEXT,'scamnasium-ack');},
+  /** Sends the analysis verdict back to the consenting sender. Text comes from domain.verdictReply. */
+  async replyVerdict(message:PhotonMessage,text:string){return reply(message,text.slice(0,600),'scamnasium-verdict');},
  };
 }
 export type PhotonAdapter=ReturnType<typeof createPhotonAdapter>;

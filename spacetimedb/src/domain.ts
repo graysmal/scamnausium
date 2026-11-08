@@ -126,7 +126,7 @@ export function extractHosts(text: string): string[] {
 export type SignalId =
   | 'urgency' | 'threat' | 'payment' | 'untraceable_payment' | 'credentials' | 'one_time_code'
   | 'prize' | 'remote_access' | 'callback' | 'brand_link_mismatch' | 'brand_sender_mismatch'
-  | 'reply_to_mismatch' | 'brand_sensitive_request' | 'compromise_scare' | 'shortened_link' | 'ip_link' | 'punycode_link' | 'risky_tld' | 'insecure_link' | 'lookalike_domain';
+  | 'reply_to_mismatch' | 'brand_sensitive_request' | 'compromise_scare' | 'authority_pretext' | 'shortened_link' | 'ip_link' | 'punycode_link' | 'risky_tld' | 'insecure_link' | 'lookalike_domain';
 
 export interface Signal { id: SignalId; label: string; weight: number }
 
@@ -141,6 +141,7 @@ const TEXT_RULES: Rule[] = [
   {id: 'one_time_code', weight: 3, label: 'Asks for a one-time or verification code', test: /\b(one[- ]time (pass)?code|one[- ]time password|verification code|security code|\botp\b|2fa code|code (we|i) (just )?sent)\b/i},
   {id: 'prize', weight: 2, label: 'Unexpected prize, refund or reward', test: /\b(you('ve| have)? won|winner|prize|lottery|sweepstakes|claim your (reward|gift|refund)|free gift)\b/i},
   {id: 'remote_access', weight: 3, label: 'Asks to install software or allow remote access', test: /\b(anydesk|teamviewer|remote access|install (this|the) app|screen ?share)\b/i},
+  {id: 'authority_pretext', weight: 2, label: 'Someone claiming authority asks for an unusual favor', test: /\b(i'?m (stuck )?in a meeting|can'?t talk (right )?now|keep this (between us|quiet)|don'?t tell anyone|it'?s (your|the) (boss|ceo|manager)|from (accounting|payroll|hr)\b)/i},
   {id: 'callback', weight: 1, label: 'Pushes you to call a number in the message', test: /\b(call (us|now|back|this number)|contact us at|dial)\b[^.\n]{0,40}(\[number\]|\d{3})/i},
 ];
 
@@ -152,7 +153,7 @@ const TACTICS = {
   prize_lure: {label: 'Prize or refund lure', advice: 'Real prizes and refunds never require fees or your banking details. Ignore it.'},
   tech_support: {label: 'Fake tech support', advice: 'Do not install anything or allow remote access. Close the session and contact the company through its official site.'},
   impersonation: {label: 'Brand impersonation', advice: 'Contact the organization using its official app or a number you look up yourself.'},
-  unclassified: {label: 'No clear scam pattern', advice: 'No common scam signals were found. If you are unsure, contact the organization through a channel you already trust.'},
+  unclassified: {label: 'No clear scam pattern', advice: 'If you are unsure, contact the organization through a channel you already trust.'},
 } as const;
 export type Tactic = keyof typeof TACTICS;
 
@@ -196,7 +197,9 @@ export function analyze(raw: string): Analysis {
   const text = raw;
   const signals: Signal[] = TEXT_RULES.filter(r => r.test.test(text)).map(({id, weight, label}) => ({id, weight, label}));
   const hosts = extractHosts(text);
-  const brand = BRANDS.find(b => b.pattern.test(text));
+  // "Apple gift cards" names a payment method, not the sender: ignore brands inside gift-card phrases.
+  const brandText = text.replace(/\b(apple|google play|amazon|itunes|steam|target|walmart)\s+gift ?cards?\b/gi, 'gift cards');
+  const brand = BRANDS.find(b => b.pattern.test(brandText));
   const add = (id: SignalId, weight: number, label: string) => { if (!signals.some(s => s.id === id)) signals.push({id, weight, label}); };
 
   const LOOKALIKE = /[a-z][01](?:[a-z]|\.|-)|[a-z]-(secure|verify|login|account|support|update|billing)\b/i;
@@ -219,7 +222,7 @@ export function analyze(raw: string): Analysis {
   const tactic = score >= 2 ? pickTactic(ids, text, brand) : 'unclassified';
   const brandKey = brand?.key ?? 'unbranded';
   const key = tactic === 'unclassified' ? 'unclassified' : `${tactic}:${brandKey}`;
-  const riskLevel = score >= 6 ? 'high' : score >= 3 ? 'medium' : 'low';
+  const riskLevel = score >= 5 ? 'high' : score >= 3 ? 'medium' : 'low';
   const confidence = signals.length >= 4 ? 'high' : signals.length >= 2 ? 'medium' : 'low';
   const label = tactic === 'unclassified' ? TACTICS.unclassified.label : `${brand ? brand.name + ' · ' : ''}${TACTICS[tactic].label}`;
   return {
@@ -244,4 +247,20 @@ export const CALL_STATUSES = ['ringing', 'in_progress', 'processing', 'done', 'f
 export type CallStatus = (typeof CALL_STATUSES)[number];
 export function normalizeCallStatus(providerStatus: string): CallStatus | undefined {
   return ({initiated: 'ringing', 'in-progress': 'in_progress', processing: 'processing', done: 'done', failed: 'failed'} as Record<string, CallStatus>)[providerStatus];
+}
+
+// ---------------------------------------------------------------------------
+// Customer-facing verdict (iMessage reply and customer view share this wording)
+// ---------------------------------------------------------------------------
+export const VERDICT_TITLE: Record<Analysis['riskLevel'], string> = {
+  high: 'This is very likely a scam',
+  medium: 'This looks suspicious',
+  low: 'No clear scam pattern',
+};
+
+/** Short plain-text reply for a reported message: verdict, the two strongest reasons, one next step. */
+export function verdictReply(a: Analysis): string {
+  const reasons = [...a.signals].sort((x, y) => y.weight - x.weight).slice(0, 2).map(s => s.label.replace(/\s*\([^)]*\)$/, ''));
+  const why = reasons.length ? ` Why: ${reasons.join('; ')}.` : '';
+  return `${VERDICT_TITLE[a.riskLevel]}.${why} ${a.recommendation} (Scamnasium test line. Warning signs, not proof.)`;
 }

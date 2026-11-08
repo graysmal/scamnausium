@@ -1,4 +1,4 @@
-import { sanitizeSummary } from '../../../../spacetimedb/src/domain';
+import { analyze, sanitizeSummary, verdictReply } from '../../../../spacetimedb/src/domain';
 import { externalEventId } from '../webhooks/elevenlabs';
 import { messageText, type PhotonMessage, type ReceivedImessage } from '../adapters/photon';
 import type { ExternalReport, IngestOutcome } from '../ingest';
@@ -10,7 +10,7 @@ export const MAX_MESSAGES_PER_POLL = 20;
 export interface PollerAdapter {
   listIncoming(createdSince: string, pageToken?: string): Promise<{ items: ReceivedImessage[]; nextPageToken?: string }>;
   replyToPing(m: PhotonMessage): Promise<unknown>;
-  replyAck(m: PhotonMessage): Promise<unknown>;
+  replyVerdict(m: PhotonMessage, text: string): Promise<unknown>;
   liveRepliesEnabled(): boolean;
 }
 
@@ -19,7 +19,7 @@ export interface PollerStatus { lastPollAt?: string; lastVerifiedMessageAt?: str
 /**
  * Bounded polling of Photon received iMessages from the configured consenting sender only.
  * - Starts from `startedAt` (never ingests history), advances a createdAt cursor, dedupes by message id.
- * - "ping" -> connection-test reply only (no incident). Other text -> sanitized incident.
+ * - "ping" -> connection-test reply only (no incident). Other text -> sanitized incident, and (if enabled) a verdict reply.
  * - Replies only when the adapter reports live replies enabled (ENABLE_LIVE_MESSAGING + allowlist).
  */
 export function createPhotonPoller(adapter: PollerAdapter, ingest: (r: ExternalReport) => Promise<IngestOutcome>, startedAt = new Date().toISOString()) {
@@ -36,7 +36,8 @@ export function createPhotonPoller(adapter: PollerAdapter, ingest: (r: ExternalR
     const summary = sanitizeSummary(text);
     if (!summary) return;
     const outcome = await ingest({ eventId: externalEventId('ph', m.id), source: 'photon_imessage', channel: 'imessage', summary });
-    if (outcome === 'created' && adapter.liveRepliesEnabled()) await adapter.replyAck(m);
+    // Photon dedupes on the idempotency key, so a retried 'resumed' event cannot double-send.
+    if (outcome !== 'duplicate' && adapter.liveRepliesEnabled()) await adapter.replyVerdict(m, verdictReply(analyze(summary)));
   }
 
   async function pollOnce(): Promise<number> {
