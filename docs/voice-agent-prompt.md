@@ -37,7 +37,6 @@ Ending the call:
 
 ## Recommended ElevenLabs settings
 - Voice: an older, calm voice. Stability around 0.75 and speed 0.92: low stability is what makes the voice sound over-excited. The script sets both.
-- Max call length: 600 s (override with `AGENT_MAX_CALL_SECS`), so a long call can't run up the bill.
 - LLM temperature: around 0.6.
-- Max conversation duration: 10 minutes, so test calls don't burn credits.
+- Max conversation duration: 10 minutes, so test calls don't burn credits (the script sets it; override with `AGENT_MAX_CALL_SECS`).
 - Turn on Analysis → Summary, so `transcript_summary` and `call_summary_title` exist. The app uses them to file the call.
