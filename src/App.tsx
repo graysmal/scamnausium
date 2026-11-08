@@ -76,6 +76,8 @@ export default function App() {
   const elements = useMemo(() => buildElements(incidents, campaigns, indicators, calls), [incidents, campaigns, indicators, calls]);
   const incidentIds = useMemo(() => new Set(incidents.map(i => i.id)), [incidents]);
   const canAct = Boolean(secret) && isActive && !busy;
+  // The first connection takes a moment; only call it "down" if it stays down.
+  const dbDown = useSustained(!isActive, 2500);
 
   async function run<T>(task: () => Promise<T>): Promise<T | undefined> {
     setBusy(true);
@@ -96,12 +98,12 @@ export default function App() {
     if (result.incidentId) setSelection({kind: 'incident', id: result.incidentId});
   });
 
-  const onReport = async (text: string, channel: 'auto' | 'sms' | 'email' | 'imessage') => {
+  const onReport = async (text: string, channel: 'auto' | 'sms' | 'email' | 'imessage', openInNetwork = true) => {
     const result = await run(() => postReport(secret, text, channel));
     if (!result) return false;
     setSelection({kind: 'incident', id: result.incidentId});
     if (result.outcome === 'duplicate') setNotice({tone: 'info', text: 'Already reported. Showing the existing record.'});
-    setView('network');
+    if (openInNetwork) setView('network');
     return true;
   };
 
@@ -130,8 +132,8 @@ export default function App() {
           onOpenIncident={id => { setSelection({kind: 'incident', id}); setView('network'); }} />
 
         <main className="main">
-          {!isActive && <div className="notice notice-error" role="alert">Not connected to the database. Start it with <span className="mono">spacetime start</span>, then reload.</div>}
-          {isActive && !status.reachable && <div className="notice notice-error" role="alert">Gateway is not running. Start it with <span className="mono">npm run gateway</span> to use controls and see calls.</div>}
+          {dbDown && <div className="notice notice-error" role="alert"><span>Not connected to the database. Start it with <span className="mono">spacetime start</span>, then reload.</span></div>}
+          {isActive && !status.reachable && <div className="notice notice-error" role="alert"><span>Gateway is not running. Start it with <span className="mono">npm run gateway</span> to use controls and see calls.</span></div>}
           {notice && <div className={`notice notice-${notice.tone}`} role={notice.tone === 'error' ? 'alert' : 'status'}>{notice.text}<button type="button" className="link" onClick={() => setNotice(null)}>Dismiss</button></div>}
           {view === 'network' && (
             <div className="network">
@@ -151,7 +153,8 @@ export default function App() {
               </div>
             </div>
           )}
-          {view === 'customer' && <CustomerView data={data} focusId={selection?.kind === 'incident' ? selection.id : undefined} onFocus={id => setSelection({kind: 'incident', id})} />}
+          {view === 'customer' && <CustomerView data={data} focusId={selection?.kind === 'incident' ? selection.id : undefined} onFocus={id => setSelection({kind: 'incident', id})}
+            canReport={canAct} onReport={text => onReport(text, 'auto', false)} />}
           {view === 'collector' && <CollectorView events={events} sessions={sessions} campaigns={campaigns} />}
           {view === 'setup' && <SetupView status={status} dbActive={isActive} />}
         </main>
@@ -160,4 +163,15 @@ export default function App() {
       <footer className="footnote">Scenario data is simulated. Real calls and messages come only from the team’s own test phones. Detection shows warning signs, not verdicts.</footer>
     </div>
   );
+}
+
+/** True once `value` has stayed true for `ms`; resets immediately when it turns false. */
+function useSustained(value: boolean, ms: number) {
+  const [sustained, setSustained] = useState(false);
+  useEffect(() => {
+    if (!value) { setSustained(false); return; }
+    const id = setTimeout(() => setSustained(true), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return sustained;
 }
